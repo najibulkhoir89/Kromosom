@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>Visualisasi Interaktif 3D: Kromosom, DNA, RNA, dan Gen</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -28,14 +28,17 @@
             top: 0;
             left: 0;
             z-index: 1;
+            touch-action: none;
         }
         .glass-panel {
-            background: rgba(15, 23, 42, 0.75);
-            backdrop-filter: blur(12px);
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
             border: 1px solid rgba(255, 255, 255, 0.12);
         }
         .custom-scrollbar::-webkit-scrollbar {
-            width: 6px;
+            width: 5px;
+            height: 5px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
             background: rgba(15, 23, 42, 0.6);
@@ -47,6 +50,13 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background: rgba(99, 102, 241, 0.8);
         }
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
         .badge-adenin { background-color: #ef4444; color: white; }
         .badge-timin { background-color: #eab308; color: black; }
         .badge-urasil { background-color: #84cc16; color: black; }
@@ -54,35 +64,47 @@
         .badge-sitosin { background-color: #3b82f6; color: white; }
     </style>
 </head>
-<body class="h-screen w-screen flex flex-col overflow-hidden select-none">
+<body class="h-screen h-[100dvh] w-screen flex flex-col overflow-hidden select-none bg-slate-950 text-slate-100">
 
-    <!-- Header Header Section -->
-    <header class="relative z-10 w-full px-6 py-4 glass-panel border-b border-slate-800 flex flex-wrap justify-between items-center gap-4">
-        <div>
-            <div class="flex items-center gap-3">
-                <span class="p-2 bg-indigo-600 rounded-lg text-white font-bold text-xl"><i class="fa-solid fa-dna"></i></span>
+    <!-- Header Section -->
+    <header class="relative z-20 w-full px-3 py-2 sm:px-5 sm:py-3 md:px-6 md:py-3.5 glass-panel border-b border-slate-800 flex flex-col md:flex-row md:justify-between md:items-center gap-2 md:gap-4 shrink-0">
+        <div class="flex items-center justify-between w-full md:w-auto">
+            <div class="flex items-center gap-2.5 sm:gap-3">
+                <span class="p-1.5 sm:p-2 bg-indigo-600 rounded-lg text-white font-bold text-base sm:text-xl shrink-0 shadow-md shadow-indigo-600/30">
+                    <i class="fa-solid fa-dna"></i>
+                </span>
                 <div>
-                    <h1 class="text-xl md:text-2xl font-extrabold tracking-tight text-white">Kromosom, DNA, RNA, dan Gen</h1>
-                    <p class="text-xs md:text-sm text-indigo-300 font-medium">Satu kesatuan untuk mewariskan kehidupan!</p>
+                    <h1 class="text-sm sm:text-base md:text-xl lg:text-2xl font-extrabold tracking-tight text-white leading-tight">
+                        Kromosom, DNA, RNA & Gen
+                    </h1>
+                    <p class="text-[10px] sm:text-xs text-indigo-300 font-medium hidden sm:block">
+                        Satu kesatuan untuk mewariskan kehidupan!
+                    </p>
                 </div>
             </div>
+
+            <!-- Mobile Quick Toggle Info Button -->
+            <button onclick="toggleMobileSheet()" class="md:hidden px-2.5 py-1.5 bg-indigo-600/90 hover:bg-indigo-600 active:scale-95 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 shadow-md shadow-indigo-600/30 transition">
+                <i class="fa-solid fa-book-open"></i>
+                <span>Info & Kuis</span>
+            </button>
         </div>
 
         <!-- Navigation / Preset Buttons -->
-        <div class="flex items-center gap-2 overflow-x-auto py-1 custom-scrollbar">
-            <button onclick="focusModel('all')" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center gap-1.5 shadow-lg shadow-indigo-600/30">
+        <div class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar py-0.5 w-full md:w-auto">
+            <button id="nav-btn-all" onclick="focusModel('all')" class="nav-btn px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center gap-1.5 shadow-lg shadow-indigo-600/30 shrink-0">
                 <i class="fa-solid fa-cubes"></i> Semua
             </button>
-            <button onclick="focusModel('kromosom')" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-500/30 transition flex items-center gap-1.5">
+            <button id="nav-btn-kromosom" onclick="focusModel('kromosom')" class="nav-btn px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold bg-slate-800/80 hover:bg-slate-700 text-purple-300 border border-purple-500/30 transition flex items-center gap-1.5 shrink-0">
                 <i class="fa-solid fa-chromosome"></i> Kromosom
             </button>
-            <button onclick="focusModel('dna')" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-blue-300 border border-blue-500/30 transition flex items-center gap-1.5">
+            <button id="nav-btn-dna" onclick="focusModel('dna')" class="nav-btn px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold bg-slate-800/80 hover:bg-slate-700 text-blue-300 border border-blue-500/30 transition flex items-center gap-1.5 shrink-0">
                 <i class="fa-solid fa-dna"></i> DNA
             </button>
-            <button onclick="focusModel('rna')" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/30 transition flex items-center gap-1.5">
+            <button id="nav-btn-rna" onclick="focusModel('rna')" class="nav-btn px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold bg-slate-800/80 hover:bg-slate-700 text-emerald-300 border border-emerald-500/30 transition flex items-center gap-1.5 shrink-0">
                 <i class="fa-solid fa-share-nodes"></i> RNA
             </button>
-            <button onclick="focusModel('gen')" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 transition flex items-center gap-1.5">
+            <button id="nav-btn-gen" onclick="focusModel('gen')" class="nav-btn px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold bg-slate-800/80 hover:bg-slate-700 text-amber-300 border border-amber-500/30 transition flex items-center gap-1.5 shrink-0">
                 <i class="fa-solid fa-code-commit"></i> Gen
             </button>
         </div>
@@ -95,20 +117,28 @@
         <div id="canvas-container"></div>
 
         <!-- Floating Controls (Left Side) -->
-        <div class="absolute left-4 top-4 z-10 flex flex-col gap-2">
-            <div class="glass-panel p-2 rounded-xl flex flex-col gap-2 shadow-2xl border border-slate-700">
-                <button onclick="resetCamera()" class="p-2 bg-slate-800/80 hover:bg-slate-700 text-slate-200 rounded-lg text-xs flex items-center gap-2 transition" title="Reset Pandangan Kamera">
-                    <i class="fa-solid fa-rotate-left"></i> <span class="hidden sm:inline">Reset View</span>
+        <div class="absolute left-3 top-3 sm:left-4 sm:top-4 z-10 flex flex-col gap-2 pointer-events-none">
+            <div class="glass-panel p-1.5 sm:p-2 rounded-xl flex flex-row sm:flex-col gap-1.5 sm:gap-2 shadow-2xl border border-slate-700/80 pointer-events-auto backdrop-blur-md">
+                <button onclick="resetCamera()" class="p-2 sm:px-2.5 sm:py-2 bg-slate-800/90 hover:bg-slate-700 active:scale-95 text-slate-200 rounded-lg text-xs flex items-center justify-center gap-1.5 transition" title="Reset Pandangan Kamera">
+                    <i class="fa-solid fa-rotate-left"></i> <span class="hidden sm:inline">Reset</span>
                 </button>
-                <button onclick="toggleRotation()" id="btn-rotate" class="p-2 bg-slate-800/80 hover:bg-slate-700 text-indigo-400 rounded-lg text-xs flex items-center gap-2 transition" title="Putar Otomatis">
-                    <i class="fa-solid fa-arrows-spin"></i> <span class="hidden sm:inline">Rotasi 3D</span>
+                <button onclick="toggleRotation()" id="btn-rotate" class="p-2 sm:px-2.5 sm:py-2 bg-slate-800/90 hover:bg-slate-700 active:scale-95 text-indigo-400 rounded-lg text-xs flex items-center justify-center gap-1.5 transition" title="Putar Otomatis">
+                    <i class="fa-solid fa-arrows-spin"></i> <span class="hidden sm:inline">Rotasi</span>
+                </button>
+                <button onclick="toggleLegend()" id="btn-legend" class="p-2 sm:px-2.5 sm:py-2 bg-slate-800/90 hover:bg-slate-700 active:scale-95 text-slate-200 rounded-lg text-xs flex items-center justify-center gap-1.5 transition" title="Legenda Pasangan Basa">
+                    <i class="fa-solid fa-palette text-indigo-400"></i> <span class="hidden sm:inline">Legenda</span>
                 </button>
             </div>
             
             <!-- Basa Nitrogen Legend Badge Box -->
-            <div class="glass-panel p-3 rounded-xl shadow-2xl border border-slate-700 max-w-[200px]">
-                <div class="text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1">
-                    <i class="fa-solid fa-palette text-indigo-400"></i> Pasangan Basa
+            <div id="legend-card" class="hidden sm:block glass-panel p-3 rounded-xl shadow-2xl border border-slate-700 max-w-[210px] pointer-events-auto backdrop-blur-md">
+                <div class="flex items-center justify-between mb-2">
+                    <div class="text-[11px] font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1">
+                        <i class="fa-solid fa-palette text-indigo-400"></i> Pasangan Basa
+                    </div>
+                    <button onclick="toggleLegend(false)" class="sm:hidden text-slate-400 hover:text-white text-xs p-1" title="Tutup">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
                 </div>
                 <div class="grid grid-cols-1 gap-1.5 text-xs">
                     <div class="flex items-center justify-between px-2 py-0.5 rounded badge-adenin font-semibold">
@@ -130,160 +160,198 @@
             </div>
         </div>
 
-        <!-- Right Side Panel: Details & Interactive Tabs -->
-        <div class="absolute right-4 top-4 bottom-4 z-10 w-full max-w-sm md:max-w-md glass-panel rounded-2xl border border-slate-700/80 shadow-2xl flex flex-col overflow-hidden">
+        <!-- 3D Touch/Click Hint for Mobile -->
+        <div class="sm:hidden absolute top-3 right-3 z-10 pointer-events-none">
+            <span class="px-2 py-1 rounded-md bg-slate-900/80 border border-slate-700/80 text-[10px] text-slate-300 flex items-center gap-1 shadow backdrop-blur-xs">
+                <i class="fa-solid fa-hand-pointer text-indigo-400"></i> Sentuh objek 3D
+            </span>
+        </div>
+
+        <!-- Backdrop for mobile drawer -->
+        <div id="sheet-backdrop" onclick="toggleMobileSheet(false)" class="fixed inset-0 bg-slate-950/60 backdrop-blur-xs z-20 transition-opacity duration-300 opacity-0 pointer-events-none md:hidden"></div>
+
+        <!-- Right Side Panel / Mobile Bottom Sheet -->
+        <div id="info-panel" class="fixed inset-x-0 bottom-0 md:absolute md:inset-x-auto md:right-4 md:top-4 md:bottom-4 z-30 w-full md:max-w-sm lg:max-w-md glass-panel rounded-t-2xl md:rounded-2xl border-t md:border border-slate-700/80 shadow-2xl flex flex-col overflow-hidden max-h-[85vh] md:max-h-none translate-y-[calc(100%-54px)] md:translate-y-0 transition-transform duration-300 ease-out">
             
+            <!-- Mobile Sheet Drag / Peek Header -->
+            <div onclick="toggleMobileSheet()" class="cursor-pointer md:cursor-default select-none border-b border-slate-700/80 bg-slate-900/90 px-4 py-2.5 flex items-center justify-between shrink-0">
+                <div class="flex items-center gap-2.5">
+                    <!-- Mobile drag handle bar -->
+                    <div class="md:hidden flex flex-col items-center justify-center -ml-1 mr-1">
+                        <div class="w-8 h-1 bg-slate-500 rounded-full"></div>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span id="sheet-icon" class="p-1.5 bg-indigo-600 rounded text-white text-xs shadow"><i class="fa-solid fa-dna"></i></span>
+                        <div>
+                            <span id="sheet-title" class="text-xs sm:text-sm font-bold text-slate-200 block truncate max-w-[200px] sm:max-w-xs">Struktur Materi Genetik</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    <span id="sheet-badge" class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-semibold border border-indigo-500/30 md:hidden">Buka Info</span>
+                    <button id="sheet-toggle-btn" class="md:hidden p-1 text-slate-400 hover:text-white rounded transition" title="Perluas / Tutup Panel">
+                        <i id="sheet-toggle-icon" class="fa-solid fa-chevron-up text-xs"></i>
+                    </button>
+                </div>
+            </div>
+
             <!-- Tab Navigation Header -->
-            <div class="flex border-b border-slate-700/80 bg-slate-900/50">
-                <button onclick="switchTab('detail')" id="tab-btn-detail" class="flex-1 py-3 text-xs font-bold text-center border-b-2 border-indigo-500 text-indigo-400 transition">
-                    <i class="fa-solid fa-circle-info mr-1"></i> Detail Informasi
+            <div class="flex border-b border-slate-700/80 bg-slate-900/60 shrink-0">
+                <button onclick="switchTab('detail')" id="tab-btn-detail" class="flex-1 py-2.5 sm:py-3 text-xs font-bold text-center border-b-2 border-indigo-500 text-indigo-400 transition flex items-center justify-center gap-1">
+                    <i class="fa-solid fa-circle-info"></i> <span>Detail</span>
                 </button>
-                <button onclick="switchTab('flow')" id="tab-btn-flow" class="flex-1 py-3 text-xs font-bold text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition">
-                    <i class="fa-solid fa-diagram-project mr-1"></i> Alur ekspresi
+                <button onclick="switchTab('flow')" id="tab-btn-flow" class="flex-1 py-2.5 sm:py-3 text-xs font-bold text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition flex items-center justify-center gap-1">
+                    <i class="fa-solid fa-diagram-project"></i> <span>Alur</span>
                 </button>
-                <button onclick="switchTab('quiz')" id="tab-btn-quiz" class="flex-1 py-3 text-xs font-bold text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition">
-                    <i class="fa-solid fa-graduation-cap mr-1"></i> Kuis Evaluasi
+                <button onclick="switchTab('quiz')" id="tab-btn-quiz" class="flex-1 py-2.5 sm:py-3 text-xs font-bold text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition flex items-center justify-center gap-1">
+                    <i class="fa-solid fa-graduation-cap"></i> <span>Kuis</span>
                 </button>
             </div>
 
-            <!-- Tab 1: Detail Panel -->
-            <div id="tab-content-detail" class="p-5 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4">
-                <div id="detail-card-header" class="flex items-center gap-3 p-3 rounded-xl bg-indigo-950/50 border border-indigo-500/30">
-                    <div id="detail-icon" class="p-3 bg-indigo-600 rounded-lg text-white text-xl">
-                        <i class="fa-solid fa-dna"></i>
-                    </div>
-                    <div>
-                        <h2 id="detail-title" class="text-lg font-bold text-white">Struktur Materi Genetik</h2>
-                        <span id="detail-tag" class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-semibold border border-indigo-500/30">Gambaran Umum</span>
-                    </div>
-                </div>
-
-                <div id="detail-body" class="text-sm text-slate-300 leading-relaxed flex flex-col gap-3">
-                    <p>Klik tombol struktur di bagian atas atau klik objek 3D di layar untuk mempelajari komponen kromosom, DNA, RNA, dan gen secara mendalam.</p>
-                </div>
-
-                <!-- Functional Card Matrix -->
-                <div class="mt-2 pt-3 border-t border-slate-700/60">
-                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Fungsi Utama Ringkas</h3>
-                    <div class="grid grid-cols-1 gap-2 text-xs">
-                        <div class="p-2.5 rounded-lg bg-slate-800/60 border border-purple-500/20 flex items-start gap-2">
-                            <span class="text-purple-400 font-bold mt-0.5"><i class="fa-solid fa-chromosome"></i></span>
-                            <div>
-                                <span class="font-bold text-purple-300">Kromosom:</span>
-                                <p class="text-slate-400 text-[11px] mt-0.5">Mengemas dan melindungi rantai DNA panjang di dalam inti sel.</p>
-                            </div>
+            <!-- Scrollable Content Container -->
+            <div class="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-5 flex flex-col">
+                <!-- Tab 1: Detail Panel -->
+                <div id="tab-content-detail" class="flex flex-col gap-4">
+                    <div id="detail-card-header" class="flex items-center gap-3 p-3 rounded-xl bg-indigo-950/50 border border-indigo-500/30">
+                        <div id="detail-icon" class="p-2.5 sm:p-3 bg-indigo-600 rounded-lg text-white text-lg sm:text-xl shrink-0">
+                            <i class="fa-solid fa-dna"></i>
                         </div>
-                        <div class="p-2.5 rounded-lg bg-slate-800/60 border border-blue-500/20 flex items-start gap-2">
-                            <span class="text-blue-400 font-bold mt-0.5"><i class="fa-solid fa-dna"></i></span>
-                            <div>
-                                <span class="font-bold text-blue-300">DNA:</span>
-                                <p class="text-slate-400 text-[11px] mt-0.5">Menyimpan informasi genetik utama dalam rantai ganda berpilin (double helix).</p>
-                            </div>
-                        </div>
-                        <div class="p-2.5 rounded-lg bg-slate-800/60 border border-emerald-500/20 flex items-start gap-2">
-                            <span class="text-emerald-400 font-bold mt-0.5"><i class="fa-solid fa-share-nodes"></i></span>
-                            <div>
-                                <span class="font-bold text-emerald-300">RNA:</span>
-                                <p class="text-slate-400 text-[11px] mt-0.5">Menyalin dan membawa informasi genetik dari DNA ke ribosom untuk sintesis protein.</p>
-                            </div>
-                        </div>
-                        <div class="p-2.5 rounded-lg bg-slate-800/60 border border-amber-500/20 flex items-start gap-2">
-                            <span class="text-amber-400 font-bold mt-0.5"><i class="fa-solid fa-code-commit"></i></span>
-                            <div>
-                                <span class="font-bold text-amber-300">Gen:</span>
-                                <p class="text-slate-400 text-[11px] mt-0.5">Segmen spesifik DNA yang menentukan instruksi pembentukan sifat/karakter.</p>
-                            </div>
+                        <div class="min-w-0 flex-1">
+                            <h2 id="detail-title" class="text-base sm:text-lg font-bold text-white truncate">Struktur Materi Genetik</h2>
+                            <span id="detail-tag" class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-semibold border border-indigo-500/30 inline-block mt-0.5">Gambaran Umum</span>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <!-- Tab 2: Flow / Hubungan Materi Genetik -->
-            <div id="tab-content-flow" class="p-5 flex-1 overflow-y-auto custom-scrollbar hidden flex flex-col gap-4">
-                <div class="text-center p-3 rounded-xl bg-indigo-950/40 border border-indigo-500/20">
-                    <h2 class="text-base font-bold text-indigo-300">Hubungan Hirarki Biologi</h2>
-                    <p class="text-xs text-slate-400 mt-1">"Dari gen, lahir protein; dari protein, lahir kehidupan."</p>
-                </div>
+                    <div id="detail-body" class="text-xs sm:text-sm text-slate-300 leading-relaxed flex flex-col gap-2.5">
+                        <p>Klik tombol struktur di atas atau sentuh objek 3D di layar untuk mempelajari komponen kromosom, DNA, RNA, dan gen secara mendalam.</p>
+                    </div>
 
-                <!-- Timeline flow list -->
-                <div class="relative border-l-2 border-indigo-500/30 ml-4 pl-4 flex flex-col gap-4 text-xs">
-                    <div class="relative">
-                        <span class="absolute -left-[23px] top-1 w-3.5 h-3.5 rounded-full bg-purple-500 ring-4 ring-slate-900"></span>
-                        <span class="font-bold text-purple-300 text-sm">1. Kromosom</span>
-                        <p class="text-slate-300 mt-1">Struktur tertinggi yang membungkus banyak gen & rantai DNA panjang mengelilingi protein histon.</p>
+                    <!-- Functional Card Matrix -->
+                    <div class="mt-2 pt-3 border-t border-slate-700/60">
+                        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Fungsi Utama Ringkas</h3>
+                        <div class="grid grid-cols-1 gap-2 text-xs">
+                            <div onclick="focusModel('kromosom')" class="p-2.5 rounded-lg bg-slate-800/60 hover:bg-slate-800/90 border border-purple-500/20 flex items-start gap-2.5 cursor-pointer transition">
+                                <span class="text-purple-400 font-bold mt-0.5 text-base shrink-0"><i class="fa-solid fa-chromosome"></i></span>
+                                <div>
+                                    <span class="font-bold text-purple-300">Kromosom:</span>
+                                    <p class="text-slate-400 text-[11px] mt-0.5">Mengemas dan melindungi rantai DNA panjang di dalam inti sel.</p>
+                                </div>
+                            </div>
+                            <div onclick="focusModel('dna')" class="p-2.5 rounded-lg bg-slate-800/60 hover:bg-slate-800/90 border border-blue-500/20 flex items-start gap-2.5 cursor-pointer transition">
+                                <span class="text-blue-400 font-bold mt-0.5 text-base shrink-0"><i class="fa-solid fa-dna"></i></span>
+                                <div>
+                                    <span class="font-bold text-blue-300">DNA:</span>
+                                    <p class="text-slate-400 text-[11px] mt-0.5">Menyimpan informasi genetik utama dalam rantai ganda berpilin (double helix).</p>
+                                </div>
+                            </div>
+                            <div onclick="focusModel('rna')" class="p-2.5 rounded-lg bg-slate-800/60 hover:bg-slate-800/90 border border-emerald-500/20 flex items-start gap-2.5 cursor-pointer transition">
+                                <span class="text-emerald-400 font-bold mt-0.5 text-base shrink-0"><i class="fa-solid fa-share-nodes"></i></span>
+                                <div>
+                                    <span class="font-bold text-emerald-300">RNA:</span>
+                                    <p class="text-slate-400 text-[11px] mt-0.5">Menyalin dan membawa informasi genetik dari DNA ke ribosom untuk sintesis protein.</p>
+                                </div>
+                            </div>
+                            <div onclick="focusModel('gen')" class="p-2.5 rounded-lg bg-slate-800/60 hover:bg-slate-800/90 border border-amber-500/20 flex items-start gap-2.5 cursor-pointer transition">
+                                <span class="text-amber-400 font-bold mt-0.5 text-base shrink-0"><i class="fa-solid fa-code-commit"></i></span>
+                                <div>
+                                    <span class="font-bold text-amber-300">Gen:</span>
+                                    <p class="text-slate-400 text-[11px] mt-0.5">Segmen spesifik DNA yang menentukan instruksi pembentukan sifat/karakter.</p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
-                    <div class="relative">
-                        <span class="absolute -left-[23px] top-1 w-3.5 h-3.5 rounded-full bg-blue-500 ring-4 ring-slate-900"></span>
-                        <span class="font-bold text-blue-300 text-sm">2. DNA</span>
-                        <p class="text-slate-300 mt-1">Molekul utama untai ganda berpilin yang menyimpan perpustakaan kode genetik lengkap sel.</p>
-                    </div>
-                    <div class="relative">
-                        <span class="absolute -left-[23px] top-1 w-3.5 h-3.5 rounded-full bg-amber-500 ring-4 ring-slate-900"></span>
-                        <span class="font-bold text-amber-300 text-sm">3. Gen</span>
-                        <p class="text-slate-300 mt-1">Segmen tertentu pada rantai DNA yang mengekspresikan ciri atau kode sifat tertentu.</p>
-                    </div>
-                    <div class="relative">
-                        <span class="absolute -left-[23px] top-1 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-4 ring-slate-900"></span>
-                        <span class="font-bold text-emerald-300 text-sm">4. RNA</span>
-                        <p class="text-slate-300 mt-1">Untai tunggal yang dibuat melalui transkripsi gen untuk dikirim menuju ribosom.</p>
-                    </div>
-                    <div class="relative">
-                        <span class="absolute -left-[23px] top-1 w-3.5 h-3.5 rounded-full bg-orange-500 ring-4 ring-slate-900"></span>
-                        <span class="font-bold text-orange-300 text-sm">5. Protein</span>
-                        <p class="text-slate-300 mt-1">Hasil akhir penerjemahan (translasi) RNA yang menentukan struktur dan fungsi makhluk hidup.</p>
-                    </div>
-                </div>
-
-                <!-- Structural Comparison Table -->
-                <div class="mt-3 p-3 rounded-xl bg-slate-900/80 border border-slate-700">
-                    <h3 class="text-xs font-bold text-slate-300 mb-2">Perbandingan DNA vs RNA</h3>
-                    <table class="w-full text-left text-[11px] text-slate-300">
-                        <thead class="bg-slate-800 text-slate-400">
-                            <tr>
-                                <th class="p-1.5">Fitur</th>
-                                <th class="p-1.5 text-blue-400">DNA</th>
-                                <th class="p-1.5 text-emerald-400">RNA</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-800">
-                            <tr>
-                                <td class="p-1.5 font-medium">Bentuk Rantai</td>
-                                <td class="p-1.5">Ganda Berpilin</td>
-                                <td class="p-1.5">Tunggal Lurus/Pilin</td>
-                            </tr>
-                            <tr>
-                                <td class="p-1.5 font-medium">Gula Pentosa</td>
-                                <td class="p-1.5">Deoksiribosa</td>
-                                <td class="p-1.5">Ribosa</td>
-                            </tr>
-                            <tr>
-                                <td class="p-1.5 font-medium">Basa Pirimidin</td>
-                                <td class="p-1.5">Timin (T)</td>
-                                <td class="p-1.5">Urasil (U)</td>
-                            </tr>
-                            <tr>
-                                <td class="p-1.5 font-medium">Fungsi</td>
-                                <td class="p-1.5">Penyimpan Genetik</td>
-                                <td class="p-1.5">Sintesis Protein</td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Tab 3: Interactive Quiz -->
-            <div id="tab-content-quiz" class="p-5 flex-1 overflow-y-auto custom-scrollbar hidden flex flex-col gap-4">
-                <div class="p-3 rounded-xl bg-indigo-950/40 border border-indigo-500/20 flex justify-between items-center">
-                    <div>
-                        <h2 class="text-base font-bold text-indigo-300">Kuis Evaluasi</h2>
-                        <p class="text-xs text-slate-400">Uji pemahaman materi genetik</p>
-                    </div>
-                    <span id="quiz-score" class="px-3 py-1 rounded-full bg-indigo-600 font-extrabold text-white text-xs">Skor: 0</span>
                 </div>
 
-                <!-- Quiz Questions List -->
-                <div id="quiz-container" class="flex flex-col gap-4 text-xs">
-                    <!-- Questions generated via JavaScript -->
+                <!-- Tab 2: Flow / Hubungan Materi Genetik -->
+                <div id="tab-content-flow" class="hidden flex flex-col gap-4">
+                    <div class="text-center p-3 rounded-xl bg-indigo-950/40 border border-indigo-500/20">
+                        <h2 class="text-sm sm:text-base font-bold text-indigo-300">Hubungan Hirarki Biologi</h2>
+                        <p class="text-xs text-slate-400 mt-1">"Dari gen, lahir protein; dari protein, lahir kehidupan."</p>
+                    </div>
+
+                    <!-- Timeline flow list -->
+                    <div class="relative border-l-2 border-indigo-500/30 ml-3 sm:ml-4 pl-3 sm:pl-4 flex flex-col gap-3.5 text-xs">
+                        <div class="relative">
+                            <span class="absolute -left-[19px] sm:-left-[23px] top-1 w-3.5 h-3.5 rounded-full bg-purple-500 ring-4 ring-slate-900"></span>
+                            <span class="font-bold text-purple-300 text-sm">1. Kromosom</span>
+                            <p class="text-slate-300 mt-0.5 text-[11px] sm:text-xs">Struktur tertinggi yang membungkus banyak gen & rantai DNA panjang mengelilingi protein histon.</p>
+                        </div>
+                        <div class="relative">
+                            <span class="absolute -left-[19px] sm:-left-[23px] top-1 w-3.5 h-3.5 rounded-full bg-blue-500 ring-4 ring-slate-900"></span>
+                            <span class="font-bold text-blue-300 text-sm">2. DNA</span>
+                            <p class="text-slate-300 mt-0.5 text-[11px] sm:text-xs">Molekul utama untai ganda berpilin yang menyimpan perpustakaan kode genetik lengkap sel.</p>
+                        </div>
+                        <div class="relative">
+                            <span class="absolute -left-[19px] sm:-left-[23px] top-1 w-3.5 h-3.5 rounded-full bg-amber-500 ring-4 ring-slate-900"></span>
+                            <span class="font-bold text-amber-300 text-sm">3. Gen</span>
+                            <p class="text-slate-300 mt-0.5 text-[11px] sm:text-xs">Segmen tertentu pada rantai DNA yang mengekspresikan ciri atau kode sifat tertentu.</p>
+                        </div>
+                        <div class="relative">
+                            <span class="absolute -left-[19px] sm:-left-[23px] top-1 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-4 ring-slate-900"></span>
+                            <span class="font-bold text-emerald-300 text-sm">4. RNA</span>
+                            <p class="text-slate-300 mt-0.5 text-[11px] sm:text-xs">Untai tunggal yang dibuat melalui transkripsi gen untuk dikirim menuju ribosom.</p>
+                        </div>
+                        <div class="relative">
+                            <span class="absolute -left-[19px] sm:-left-[23px] top-1 w-3.5 h-3.5 rounded-full bg-orange-500 ring-4 ring-slate-900"></span>
+                            <span class="font-bold text-orange-300 text-sm">5. Protein</span>
+                            <p class="text-slate-300 mt-0.5 text-[11px] sm:text-xs">Hasil akhir penerjemahan (translasi) RNA yang menentukan struktur dan fungsi makhluk hidup.</p>
+                        </div>
+                    </div>
+
+                    <!-- Structural Comparison Table -->
+                    <div class="mt-2 p-3 rounded-xl bg-slate-900/80 border border-slate-700">
+                        <h3 class="text-xs font-bold text-slate-300 mb-2">Perbandingan DNA vs RNA</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-[11px] text-slate-300 min-w-[260px]">
+                                <thead class="bg-slate-800 text-slate-400">
+                                    <tr>
+                                        <th class="p-1.5">Fitur</th>
+                                        <th class="p-1.5 text-blue-400">DNA</th>
+                                        <th class="p-1.5 text-emerald-400">RNA</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-800">
+                                    <tr>
+                                        <td class="p-1.5 font-medium">Bentuk Rantai</td>
+                                        <td class="p-1.5">Ganda Berpilin</td>
+                                        <td class="p-1.5">Tunggal Lurus/Pilin</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-1.5 font-medium">Gula Pentosa</td>
+                                        <td class="p-1.5">Deoksiribosa</td>
+                                        <td class="p-1.5">Ribosa</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-1.5 font-medium">Basa Pirimidin</td>
+                                        <td class="p-1.5">Timin (T)</td>
+                                        <td class="p-1.5">Urasil (U)</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="p-1.5 font-medium">Fungsi</td>
+                                        <td class="p-1.5">Penyimpan Genetik</td>
+                                        <td class="p-1.5">Sintesis Protein</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab 3: Interactive Quiz -->
+                <div id="tab-content-quiz" class="hidden flex flex-col gap-4">
+                    <div class="p-3 rounded-xl bg-indigo-950/40 border border-indigo-500/20 flex justify-between items-center">
+                        <div>
+                            <h2 class="text-sm sm:text-base font-bold text-indigo-300">Kuis Evaluasi</h2>
+                            <p class="text-xs text-slate-400">Uji pemahaman materi genetik</p>
+                        </div>
+                        <span id="quiz-score" class="px-3 py-1 rounded-full bg-indigo-600 font-extrabold text-white text-xs shadow">Skor: 0</span>
+                    </div>
+
+                    <!-- Quiz Questions List -->
+                    <div id="quiz-container" class="flex flex-col gap-3 text-xs">
+                        <!-- Questions generated via JavaScript -->
+                    </div>
                 </div>
             </div>
 
@@ -292,7 +360,7 @@
     </div>
 
     <!-- Footer Banner -->
-    <footer class="relative z-10 w-full px-6 py-2 glass-panel border-t border-slate-800 flex justify-between items-center text-[11px] text-slate-400">
+    <footer class="relative z-10 w-full px-4 sm:px-6 py-2 glass-panel border-t border-slate-800 hidden sm:flex justify-between items-center text-[11px] text-slate-400 shrink-0">
         <div><i class="fa-solid fa-graduation-cap text-indigo-400"></i> Media Pembelajaran Biologi 3D Interaktif</div>
         <div>Dari gen, lahir protein, dari protein, lahir kehidupan.</div>
     </footer>
@@ -362,6 +430,14 @@
             }
         };
 
+        const colorClasses = {
+            purple: { bg: 'bg-purple-600', text: 'text-purple-300', border: 'border-purple-500/30' },
+            blue: { bg: 'bg-blue-600', text: 'text-blue-300', border: 'border-blue-500/30' },
+            emerald: { bg: 'bg-emerald-600', text: 'text-emerald-300', border: 'border-emerald-500/30' },
+            amber: { bg: 'bg-amber-600', text: 'text-amber-300', border: 'border-amber-500/30' },
+            indigo: { bg: 'bg-indigo-600', text: 'text-indigo-300', border: 'border-indigo-500/30' }
+        };
+
         // Quiz Question Dataset
         const quizQuestions = [
             {
@@ -392,17 +468,24 @@
         let scene, camera, renderer, controls;
         let models = {};
         let autoRotate = true;
+        let currentModelType = 'all';
+        let currentTween = null;
+        let isMobileSheetOpen = false;
 
         function initThree() {
             const container = document.getElementById('canvas-container');
+            container.style.touchAction = 'none';
             
             // Scene Setup
             scene = new THREE.Scene();
             scene.fog = new THREE.FogExp2(0x0f172a, 0.02);
 
-            // Camera Setup
-            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
-            camera.position.set(0, 0, 28);
+            // Responsive initial camera
+            const aspect = container.clientWidth / container.clientHeight;
+            camera = new THREE.PerspectiveCamera(45, aspect, 0.1, 1000);
+            
+            const initTarget = getCameraTarget('all');
+            camera.position.set(initTarget.x, initTarget.y, initTarget.z);
 
             // Renderer
             renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -415,8 +498,9 @@
             controls = new THREE.OrbitControls(camera, renderer.domElement);
             controls.enableDamping = true;
             controls.dampingFactor = 0.05;
-            controls.maxDistance = 50;
-            controls.minDistance = 5;
+            controls.maxDistance = 120;
+            controls.minDistance = 3;
+            controls.target.set(0, initTarget.lookY, 0);
 
             // Lighting Setup
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
@@ -436,6 +520,9 @@
             buildRNAModel();
             buildGenHighlightModel();
 
+            // Setup Raycasting for click/tap interaction
+            setupRaycasting();
+
             // Event Listeners
             window.addEventListener('resize', onWindowResize);
             
@@ -445,30 +532,10 @@
 
         // --- 3D Model Procedural Constructors ---
 
-        // Helper Capsule
-        function createCapsule(radius, height, color) {
-            const group = new THREE.Group();
-            const mat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.3, metalness: 0.2 });
-            
-            const cylGeo = new THREE.CylinderGeometry(radius, radius, height, 16);
-            const cyl = new THREE.Mesh(cylGeo, mat);
-            group.add(cyl);
-
-            const sphereGeo = new THREE.SphereGeometry(radius, 16, 16);
-            const sphereTop = new THREE.Mesh(sphereGeo, mat);
-            sphereTop.position.y = height / 2;
-            group.add(sphereTop);
-
-            const sphereBot = new THREE.Mesh(sphereGeo, mat);
-            sphereBot.position.y = -height / 2;
-            group.add(sphereBot);
-
-            return group;
-        }
-
         // 1. Kromosom Model
         function buildKromosomModel() {
             const kromGroup = new THREE.Group();
+            kromGroup.name = 'kromosom';
             kromGroup.position.set(-11, 0, 0);
 
             const matKromatid = new THREE.MeshStandardMaterial({ 
@@ -529,6 +596,7 @@
         // 2. DNA Double Helix Model
         function buildDNAModel() {
             const dnaGroup = new THREE.Group();
+            dnaGroup.name = 'dna';
             dnaGroup.position.set(-3.5, 0, 0);
 
             const numPairs = 18;
@@ -594,6 +662,7 @@
         // 3. RNA Single Helix Model
         function buildRNAModel() {
             const rnaGroup = new THREE.Group();
+            rnaGroup.name = 'rna';
             rnaGroup.position.set(3.5, 0, 0);
 
             const numBases = 16;
@@ -633,6 +702,7 @@
         // 4. Gen Highlight DNA Segment
         function buildGenHighlightModel() {
             const genGroup = new THREE.Group();
+            genGroup.name = 'gen';
             genGroup.position.set(10.5, 0, 0);
 
             const numPairs = 18;
@@ -681,6 +751,44 @@
             scene.add(genGroup);
         }
 
+        // --- Raycasting for Direct 3D Click/Touch Interaction ---
+        function setupRaycasting() {
+            const container = document.getElementById('canvas-container');
+            const raycaster = new THREE.Raycaster();
+            const mouse = new THREE.Vector2();
+            let pointerDownPos = { x: 0, y: 0 };
+            let pointerDownTime = 0;
+
+            container.addEventListener('pointerdown', (e) => {
+                pointerDownPos = { x: e.clientX, y: e.clientY };
+                pointerDownTime = Date.now();
+            });
+
+            container.addEventListener('pointerup', (e) => {
+                const dist = Math.hypot(e.clientX - pointerDownPos.x, e.clientY - pointerDownPos.y);
+                const timeDiff = Date.now() - pointerDownTime;
+
+                // Treat as click/tap if movement < 10px and duration < 400ms
+                if (dist < 10 && timeDiff < 400) {
+                    const rect = renderer.domElement.getBoundingClientRect();
+                    mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+                    mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+
+                    raycaster.setFromCamera(mouse, camera);
+
+                    let hitFound = false;
+                    for (const [key, group] of Object.entries(models)) {
+                        const intersects = raycaster.intersectObjects(group.children, true);
+                        if (intersects.length > 0) {
+                            focusModel(key);
+                            hitFound = true;
+                            break;
+                        }
+                    }
+                }
+            });
+        }
+
         // Animation Loop
         function animate() {
             requestAnimationFrame(animate);
@@ -699,74 +807,239 @@
         // Window Resize Handler
         function onWindowResize() {
             const container = document.getElementById('canvas-container');
-            camera.aspect = container.clientWidth / container.clientHeight;
+            if (!container || !renderer || !camera) return;
+
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            camera.aspect = width / height;
             camera.updateProjectionMatrix();
-            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+            // On resize, ensure current focused model remains properly framed
+            if (currentModelType && !currentTween) {
+                const target = getCameraTarget(currentModelType);
+                camera.position.set(target.x, target.y, target.z);
+                controls.target.set(target.lookX, target.lookY, 0);
+            }
+        }
+
+        // Calculate Responsive Target Coordinates for Camera
+        function getCameraTarget(type) {
+            const container = document.getElementById('canvas-container');
+            const width = container ? container.clientWidth : window.innerWidth;
+            const height = container ? container.clientHeight : window.innerHeight;
+            const aspect = width / height;
+
+            const basePositions = {
+                all: { x: 0, y: 0, z: 28, lookX: 0, lookY: 0 },
+                kromosom: { x: -11, y: 0, z: 12, lookX: -11, lookY: 0 },
+                dna: { x: -3.5, y: 0, z: 10, lookX: -3.5, lookY: 0 },
+                rna: { x: 3.5, y: 0, z: 10, lookX: 3.5, lookY: 0 },
+                gen: { x: 10.5, y: 0, z: 10, lookX: 10.5, lookY: 0 }
+            };
+
+            const target = Object.assign({}, basePositions[type] || basePositions.all);
+
+            // Responsive adjustments for portrait and narrow screens
+            if (aspect < 1.2) {
+                if (type === 'all') {
+                    // Full models span ~30 units horizontally
+                    target.z = Math.min(68, Math.max(28, 30 / (0.828 * Math.max(aspect, 0.45))));
+                    target.y = 1.0;
+                    target.lookY = 0.5;
+                } else {
+                    target.z = Math.min(24, Math.max(target.z, (target.z * 0.85) / Math.max(aspect, 0.45)));
+                    target.y = 0.5;
+                    target.lookY = 0;
+                }
+            }
+
+            return target;
         }
 
         // Focus Camera Control Function
         function focusModel(type) {
+            currentModelType = type;
             autoRotate = false;
+            updateNavButtons(type);
             
-            const targetPositions = {
-                all: { x: 0, y: 0, z: 28, lookX: 0 },
-                kromosom: { x: -11, y: 0, z: 12, lookX: -11 },
-                dna: { x: -3.5, y: 0, z: 10, lookX: -3.5 },
-                rna: { x: 3.5, y: 0, z: 10, lookX: 3.5 },
-                gen: { x: 10.5, y: 0, z: 10, lookX: 10.5 }
-            };
+            const target = getCameraTarget(type);
 
-            const target = targetPositions[type];
+            if (currentTween) clearInterval(currentTween);
 
-            // Smooth camera transition
             const startPos = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
             const startLook = { x: controls.target.x, y: controls.target.y, z: controls.target.z };
             
             let progress = 0;
-            const tween = setInterval(() => {
+            currentTween = setInterval(() => {
                 progress += 0.05;
-                camera.position.x = startPos.x + (target.x - startPos.x) * progress;
-                camera.position.y = startPos.y + (target.y - startPos.y) * progress;
-                camera.position.z = startPos.z + (target.z - startPos.z) * progress;
+                // Cubic ease out transition
+                const ease = 1 - Math.pow(1 - progress, 3);
                 
-                controls.target.x = startLook.x + (target.lookX - startLook.x) * progress;
-                controls.target.y = 0;
+                camera.position.x = startPos.x + (target.x - startPos.x) * ease;
+                camera.position.y = startPos.y + (target.y - startPos.y) * ease;
+                camera.position.z = startPos.z + (target.z - startPos.z) * ease;
+                
+                controls.target.x = startLook.x + (target.lookX - startLook.x) * ease;
+                controls.target.y = startLook.y + (target.lookY - startLook.y) * ease;
                 controls.target.z = 0;
 
-                if (progress >= 1) clearInterval(tween);
+                if (progress >= 1) {
+                    clearInterval(currentTween);
+                    currentTween = null;
+                }
             }, 16);
 
-            // Update UI Detail Card if specific item chosen
+            // Update UI Detail Card
             if (type !== 'all' && infoData[type]) {
                 updateDetailCard(type);
+            } else if (type === 'all') {
+                updateDetailCardAll();
             }
+        }
+
+        // Update active navigation button styling
+        function updateNavButtons(activeType) {
+            const types = ['all', 'kromosom', 'dna', 'rna', 'gen'];
+            types.forEach(t => {
+                const btn = document.getElementById(`nav-btn-${t}`);
+                if (!btn) return;
+                
+                if (t === activeType) {
+                    btn.className = "nav-btn px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center gap-1.5 shadow-lg shadow-indigo-600/30 ring-1 ring-indigo-400 shrink-0";
+                } else {
+                    const borderColors = {
+                        all: 'border-slate-700 text-slate-300',
+                        kromosom: 'border-purple-500/30 text-purple-300',
+                        dna: 'border-blue-500/30 text-blue-300',
+                        rna: 'border-emerald-500/30 text-emerald-300',
+                        gen: 'border-amber-500/30 text-amber-300'
+                    };
+                    btn.className = `nav-btn px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold bg-slate-800/80 hover:bg-slate-700 ${borderColors[t]} border transition flex items-center gap-1.5 shrink-0`;
+                }
+            });
         }
 
         function resetCamera() {
             focusModel('all');
             autoRotate = true;
+            const btnRotate = document.getElementById('btn-rotate');
+            btnRotate.classList.remove('text-slate-400');
+            btnRotate.classList.add('text-indigo-400');
         }
 
         function toggleRotation() {
             autoRotate = !autoRotate;
-            document.getElementById('btn-rotate').classList.toggle('text-indigo-400');
-            document.getElementById('btn-rotate').classList.toggle('text-slate-400');
+            const btnRotate = document.getElementById('btn-rotate');
+            if (autoRotate) {
+                btnRotate.classList.remove('text-slate-400');
+                btnRotate.classList.add('text-indigo-400');
+            } else {
+                btnRotate.classList.remove('text-indigo-400');
+                btnRotate.classList.add('text-slate-400');
+            }
+        }
+
+        function toggleLegend(forceState) {
+            const legend = document.getElementById('legend-card');
+            if (!legend) return;
+            if (typeof forceState === 'boolean') {
+                if (forceState) legend.classList.remove('hidden');
+                else legend.classList.add('hidden');
+            } else {
+                legend.classList.toggle('hidden');
+            }
+        }
+
+        // Toggle Mobile Bottom Sheet (Drawer)
+        function toggleMobileSheet(forceState) {
+            if (window.innerWidth >= 768) return; // Desktop view doesn't collapse
+            
+            if (typeof forceState === 'boolean') {
+                isMobileSheetOpen = forceState;
+            } else {
+                isMobileSheetOpen = !isMobileSheetOpen;
+            }
+
+            const panel = document.getElementById('info-panel');
+            const backdrop = document.getElementById('sheet-backdrop');
+            const toggleIcon = document.getElementById('sheet-toggle-icon');
+            const sheetBadge = document.getElementById('sheet-badge');
+
+            if (isMobileSheetOpen) {
+                panel.classList.remove('translate-y-[calc(100%-54px)]');
+                panel.classList.add('translate-y-0');
+                backdrop.classList.remove('opacity-0', 'pointer-events-none');
+                backdrop.classList.add('opacity-100', 'pointer-events-auto');
+                if (toggleIcon) {
+                    toggleIcon.classList.remove('fa-chevron-up');
+                    toggleIcon.classList.add('fa-chevron-down');
+                }
+                if (sheetBadge) sheetBadge.innerText = 'Tutup';
+            } else {
+                panel.classList.add('translate-y-[calc(100%-54px)]');
+                panel.classList.remove('translate-y-0');
+                backdrop.classList.add('opacity-0', 'pointer-events-none');
+                backdrop.classList.remove('opacity-100', 'pointer-events-auto');
+                if (toggleIcon) {
+                    toggleIcon.classList.remove('fa-chevron-down');
+                    toggleIcon.classList.add('fa-chevron-up');
+                }
+                if (sheetBadge) sheetBadge.innerText = 'Buka Info';
+            }
         }
 
         // UI Detail Updates
         function updateDetailCard(type) {
             const data = infoData[type];
+            if (!data) return;
+
             document.getElementById('detail-title').innerText = data.title;
             document.getElementById('detail-tag').innerText = data.tag;
             document.getElementById('detail-body').innerHTML = data.html;
             
+            const colors = colorClasses[data.color] || colorClasses.indigo;
             const iconBox = document.getElementById('detail-icon');
-            iconBox.className = `p-3 rounded-lg text-white text-xl bg-${data.color}-600`;
+            iconBox.className = `p-2.5 sm:p-3 rounded-lg text-white text-lg sm:text-xl ${colors.bg}`;
             iconBox.innerHTML = `<i class="fa-solid ${data.icon}"></i>`;
+
+            // Also update bottom sheet header preview for mobile
+            const sheetTitle = document.getElementById('sheet-title');
+            if (sheetTitle) sheetTitle.innerText = data.title;
+            const sheetIcon = document.getElementById('sheet-icon');
+            if (sheetIcon) {
+                sheetIcon.className = `p-1.5 rounded text-white text-xs ${colors.bg}`;
+                sheetIcon.innerHTML = `<i class="fa-solid ${data.icon}"></i>`;
+            }
+        }
+
+        function updateDetailCardAll() {
+            document.getElementById('detail-title').innerText = "Struktur Materi Genetik";
+            document.getElementById('detail-tag').innerText = "Gambaran Umum";
+            document.getElementById('detail-body').innerHTML = `
+                <p>Klik tombol struktur di atas atau sentuh objek 3D di layar untuk mempelajari komponen kromosom, DNA, RNA, dan gen secara mendalam.</p>
+            `;
+            const iconBox = document.getElementById('detail-icon');
+            iconBox.className = "p-2.5 sm:p-3 rounded-lg text-white text-lg sm:text-xl bg-indigo-600";
+            iconBox.innerHTML = `<i class="fa-solid fa-cubes"></i>`;
+
+            const sheetTitle = document.getElementById('sheet-title');
+            if (sheetTitle) sheetTitle.innerText = "Struktur Materi Genetik";
+            const sheetIcon = document.getElementById('sheet-icon');
+            if (sheetIcon) {
+                sheetIcon.className = "p-1.5 rounded text-white text-xs bg-indigo-600";
+                sheetIcon.innerHTML = `<i class="fa-solid fa-cubes"></i>`;
+            }
         }
 
         // Tab Navigation Switcher
         function switchTab(tab) {
+            // If on mobile and sheet is collapsed, open it so user sees the content
+            if (window.innerWidth < 768 && !isMobileSheetOpen) {
+                toggleMobileSheet(true);
+            }
+
             const tabs = ['detail', 'flow', 'quiz'];
             tabs.forEach(t => {
                 document.getElementById(`tab-content-${t}`).classList.add('hidden');
@@ -793,7 +1066,7 @@
                 let optionsHTML = '';
                 q.options.forEach((opt, optIdx) => {
                     optionsHTML += `
-                        <button onclick="checkAnswer(${idx}, ${optIdx})" id="q-${idx}-opt-${optIdx}" class="w-full text-left p-2 rounded bg-slate-900/80 hover:bg-indigo-900/40 border border-slate-700/60 transition text-[11px] text-slate-300">
+                        <button onclick="checkAnswer(${idx}, ${optIdx})" id="q-${idx}-opt-${optIdx}" class="w-full text-left p-2.5 rounded-lg bg-slate-900/80 hover:bg-indigo-950/60 border border-slate-700/60 transition text-xs text-slate-300 active:scale-[0.99]">
                             ${String.fromCharCode(65 + optIdx)}. ${opt}
                         </button>
                     `;
