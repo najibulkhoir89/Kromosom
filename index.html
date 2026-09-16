@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualisasi Interaktif 3D: Kromosom, DNA, RNA, dan Gen</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0f172a;
+            color: #f8fafc;
+            overflow-x: hidden;
+        }
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
+        }
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.6);
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.5);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.8);
+        }
+        .badge-adenin { background-color: #ef4444; color: white; }
+        .badge-timin { background-color: #eab308; color: black; }
+        .badge-urasil { background-color: #84cc16; color: black; }
+        .badge-guanin { background-color: #22c55e; color: white; }
+        .badge-sitosin { background-color: #3b82f6; color: white; }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col overflow-hidden select-none">
+
+    <!-- Header Header Section -->
+    <header class="relative z-10 w-full px-6 py-4 glass-panel border-b border-slate-800 flex flex-wrap justify-between items-center gap-4">
+        <div>
+            <div class="flex items-center gap-3">
+                <span class="p-2 bg-indigo-600 rounded-lg text-white font-bold text-xl"><i class="fa-solid fa-dna"></i></span>
+                <div>
+                    <h1 class="text-xl md:text-2xl font-extrabold tracking-tight text-white">Kromosom, DNA, RNA, dan Gen</h1>
+                    <p class="text-xs md:text-sm text-indigo-300 font-medium">Satu kesatuan untuk mewariskan kehidupan!</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation / Preset Buttons -->
+        <div class="flex items-center gap-2 overflow-x-auto py-1 custom-scrollbar">
+            <button onclick="focusModel('all')" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center gap-1.5 shadow-lg shadow-indigo-600/30">
+                <i class="fa-solid fa-cubes"></i> Semua
+            </button>
+            <button onclick="focusModel('kromosom')" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-500/30 transition flex items-center gap-1.5">
+                <i class="fa-solid fa-chromosome"></i> Kromosom
+            </button>
+            <button onclick="focusModel('dna')" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-blue-300 border border-blue-500/30 transition flex items-center gap-1.5">
+                <i class="fa-solid fa-dna"></i> DNA
+            </button>
+            <button onclick="focusModel('rna')" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-emerald-300 border border-emerald-500/30 transition flex items-center gap-1.5">
+                <i class="fa-solid fa-share-nodes"></i> RNA
+            </button>
+            <button onclick="focusModel('gen')" class="nav-btn px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 transition flex items-center gap-1.5">
+                <i class="fa-solid fa-code-commit"></i> Gen
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Content Layout -->
+    <div class="relative flex-1 w-full h-full flex overflow-hidden">
+
+        <!-- WebGL Canvas Container -->
+        <div id="canvas-container"></div>
+
+        <!-- Floating Controls (Left Side) -->
+        <div class="absolute left-4 top-4 z-10 flex flex-col gap-2">
+            <div class="glass-panel p-2 rounded-xl flex flex-col gap-2 shadow-2xl border border-slate-700">
+                <button onclick="resetCamera()" class="p-2 bg-slate-800/80 hover:bg-slate-700 text-slate-200 rounded-lg text-xs flex items-center gap-2 transition" title="Reset Pandangan Kamera">
+                    <i class="fa-solid fa-rotate-left"></i> <span class="hidden sm:inline">Reset View</span>
+                </button>
+                <button onclick="toggleRotation()" id="btn-rotate" class="p-2 bg-slate-800/80 hover:bg-slate-700 text-indigo-400 rounded-lg text-xs flex items-center gap-2 transition" title="Putar Otomatis">
+                    <i class="fa-solid fa-arrows-spin"></i> <span class="hidden sm:inline">Rotasi 3D</span>
+                </button>
+            </div>
+            
+            <!-- Basa Nitrogen Legend Badge Box -->
+            <div class="glass-panel p-3 rounded-xl shadow-2xl border border-slate-700 max-w-[200px]">
+                <div class="text-[11px] font-bold text-slate-300 uppercase tracking-wider mb-2 flex items-center gap-1">
+                    <i class="fa-solid fa-palette text-indigo-400"></i> Pasangan Basa
+                </div>
+                <div class="grid grid-cols-1 gap-1.5 text-xs">
+                    <div class="flex items-center justify-between px-2 py-0.5 rounded badge-adenin font-semibold">
+                        <span>Adenin (A)</span> <span class="text-[10px] opacity-80">Merah</span>
+                    </div>
+                    <div class="flex items-center justify-between px-2 py-0.5 rounded badge-timin font-semibold">
+                        <span>Timin (T)</span> <span class="text-[10px] opacity-80">Kuning</span>
+                    </div>
+                    <div class="flex items-center justify-between px-2 py-0.5 rounded badge-urasil font-semibold">
+                        <span>Urasil (U)</span> <span class="text-[10px] opacity-80">Hijau Muda</span>
+                    </div>
+                    <div class="flex items-center justify-between px-2 py-0.5 rounded badge-guanin font-semibold">
+                        <span>Guanin (G)</span> <span class="text-[10px] opacity-80">Hijau</span>
+                    </div>
+                    <div class="flex items-center justify-between px-2 py-0.5 rounded badge-sitosin font-semibold">
+                        <span>Sitosin (C)</span> <span class="text-[10px] opacity-80">Biru</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side Panel: Details & Interactive Tabs -->
+        <div class="absolute right-4 top-4 bottom-4 z-10 w-full max-w-sm md:max-w-md glass-panel rounded-2xl border border-slate-700/80 shadow-2xl flex flex-col overflow-hidden">
+            
+            <!-- Tab Navigation Header -->
+            <div class="flex border-b border-slate-700/80 bg-slate-900/50">
+                <button onclick="switchTab('detail')" id="tab-btn-detail" class="flex-1 py-3 text-xs font-bold text-center border-b-2 border-indigo-500 text-indigo-400 transition">
+                    <i class="fa-solid fa-circle-info mr-1"></i> Detail Informasi
+                </button>
+                <button onclick="switchTab('flow')" id="tab-btn-flow" class="flex-1 py-3 text-xs font-bold text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition">
+                    <i class="fa-solid fa-diagram-project mr-1"></i> Alur ekspresi
+                </button>
+                <button onclick="switchTab('quiz')" id="tab-btn-quiz" class="flex-1 py-3 text-xs font-bold text-center border-b-2 border-transparent text-slate-400 hover:text-slate-200 transition">
+                    <i class="fa-solid fa-graduation-cap mr-1"></i> Kuis Evaluasi
+                </button>
+            </div>
+
+            <!-- Tab 1: Detail Panel -->
+            <div id="tab-content-detail" class="p-5 flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-4">
+                <div id="detail-card-header" class="flex items-center gap-3 p-3 rounded-xl bg-indigo-950/50 border border-indigo-500/30">
+                    <div id="detail-icon" class="p-3 bg-indigo-600 rounded-lg text-white text-xl">
+                        <i class="fa-solid fa-dna"></i>
+                    </div>
+                    <div>
+                        <h2 id="detail-title" class="text-lg font-bold text-white">Struktur Materi Genetik</h2>
+                        <span id="detail-tag" class="text-[10px] px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 font-semibold border border-indigo-500/30">Gambaran Umum</span>
+                    </div>
+                </div>
+
+                <div id="detail-body" class="text-sm text-slate-300 leading-relaxed flex flex-col gap-3">
+                    <p>Klik tombol struktur di bagian atas atau klik objek 3D di layar untuk mempelajari komponen kromosom, DNA, RNA, dan gen secara mendalam.</p>
+                </div>
+
+                <!-- Functional Card Matrix -->
+                <div class="mt-2 pt-3 border-t border-slate-700/60">
+                    <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Fungsi Utama Ringkas</h3>
+                    <div class="grid grid-cols-1 gap-2 text-xs">
+                        <div class="p-2.5 rounded-lg bg-slate-800/60 border border-purple-500/20 flex items-start gap-2">
+                            <span class="text-purple-400 font-bold mt-0.5"><i class="fa-solid fa-chromosome"></i></span>
+                            <div>
+                                <span class="font-bold text-purple-300">Kromosom:</span>
+                                <p class="text-slate-400 text-[11px] mt-0.5">Mengemas dan melindungi rantai DNA panjang di dalam inti sel.</p>
+                            </div>
+                        </div>
+                        <div class="p-2.5 rounded-lg bg-slate-800/60 border border-blue-500/20 flex items-start gap-2">
+                            <span class="text-blue-400 font-bold mt-0.5"><i class="fa-solid fa-dna"></i></span>
+                            <div>
+                                <span class="font-bold text-blue-300">DNA:</span>
+                                <p class="text-slate-400 text-[11px] mt-0.5">Menyimpan informasi genetik utama dalam rantai ganda berpilin (double helix).</p>
+                            </div>
+                        </div>
+                        <div class="p-2.5 rounded-lg bg-slate-800/60 border border-emerald-500/20 flex items-start gap-2">
+                            <span class="text-emerald-400 font-bold mt-0.5"><i class="fa-solid fa-share-nodes"></i></span>
+                            <div>
+                                <span class="font-bold text-emerald-300">RNA:</span>
+                                <p class="text-slate-400 text-[11px] mt-0.5">Menyalin dan membawa informasi genetik dari DNA ke ribosom untuk sintesis protein.</p>
+                            </div>
+                        </div>
+                        <div class="p-2.5 rounded-lg bg-slate-800/60 border border-amber-500/20 flex items-start gap-2">
+                            <span class="text-amber-400 font-bold mt-0.5"><i class="fa-solid fa-code-commit"></i></span>
+                            <div>
+                                <span class="font-bold text-amber-300">Gen:</span>
+                                <p class="text-slate-400 text-[11px] mt-0.5">Segmen spesifik DNA yang menentukan instruksi pembentukan sifat/karakter.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab 2: Flow / Hubungan Materi Genetik -->
+            <div id="tab-content-flow" class="p-5 flex-1 overflow-y-auto custom-scrollbar hidden flex flex-col gap-4">
+                <div class="text-center p-3 rounded-xl bg-indigo-950/40 border border-indigo-500/20">
+                    <h2 class="text-base font-bold text-indigo-300">Hubungan Hirarki Biologi</h2>
+                    <p class="text-xs text-slate-400 mt-1">"Dari gen, lahir protein; dari protein, lahir kehidupan."</p>
+                </div>
+
+                <!-- Timeline flow list -->
+                <div class="relative border-l-2 border-indigo-500/30 ml-4 pl-4 flex flex-col gap-4 text-xs">
+                    <div class="relative">
+                        <span class="absolute -left-[23px] top-1 w-3.5 h-3.5 rounded-full bg-purple-500 ring-4 ring-slate-900"></span>
+                        <span class="font-bold text-purple-300 text-sm">1. Kromosom</span>
+                        <p class="text-slate-300 mt-1">Struktur tertinggi yang membungkus banyak gen & rantai DNA panjang mengelilingi protein histon.</p>
+                    </div>
+                    <div class="relative">
+                        <span class="absolute -left-[23px] top-1 w-3.5 h-3.5 rounded-full bg-blue-500 ring-4 ring-slate-900"></span>
+                        <span class="font-bold text-blue-300 text-sm">2. DNA</span>
+                        <p class="text-slate-300 mt-1">Molekul utama untai ganda berpilin yang menyimpan perpustakaan kode genetik lengkap sel.</p>
+                    </div>
+                    <div class="relative">
+                        <span class="absolute -left-[23px] top-1 w-3.5 h-3.5 rounded-full bg-amber-500 ring-4 ring-slate-900"></span>
+                        <span class="font-bold text-amber-300 text-sm">3. Gen</span>
+                        <p class="text-slate-300 mt-1">Segmen tertentu pada rantai DNA yang mengekspresikan ciri atau kode sifat tertentu.</p>
+                    </div>
+                    <div class="relative">
+                        <span class="absolute -left-[23px] top-1 w-3.5 h-3.5 rounded-full bg-emerald-500 ring-4 ring-slate-900"></span>
+                        <span class="font-bold text-emerald-300 text-sm">4. RNA</span>
+                        <p class="text-slate-300 mt-1">Untai tunggal yang dibuat melalui transkripsi gen untuk dikirim menuju ribosom.</p>
+                    </div>
+                    <div class="relative">
+                        <span class="absolute -left-[23px] top-1 w-3.5 h-3.5 rounded-full bg-orange-500 ring-4 ring-slate-900"></span>
+                        <span class="font-bold text-orange-300 text-sm">5. Protein</span>
+                        <p class="text-slate-300 mt-1">Hasil akhir penerjemahan (translasi) RNA yang menentukan struktur dan fungsi makhluk hidup.</p>
+                    </div>
+                </div>
+
+                <!-- Structural Comparison Table -->
+                <div class="mt-3 p-3 rounded-xl bg-slate-900/80 border border-slate-700">
+                    <h3 class="text-xs font-bold text-slate-300 mb-2">Perbandingan DNA vs RNA</h3>
+                    <table class="w-full text-left text-[11px] text-slate-300">
+                        <thead class="bg-slate-800 text-slate-400">
+                            <tr>
+                                <th class="p-1.5">Fitur</th>
+                                <th class="p-1.5 text-blue-400">DNA</th>
+                                <th class="p-1.5 text-emerald-400">RNA</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800">
+                            <tr>
+                                <td class="p-1.5 font-medium">Bentuk Rantai</td>
+                                <td class="p-1.5">Ganda Berpilin</td>
+                                <td class="p-1.5">Tunggal Lurus/Pilin</td>
+                            </tr>
+                            <tr>
+                                <td class="p-1.5 font-medium">Gula Pentosa</td>
+                                <td class="p-1.5">Deoksiribosa</td>
+                                <td class="p-1.5">Ribosa</td>
+                            </tr>
+                            <tr>
+                                <td class="p-1.5 font-medium">Basa Pirimidin</td>
+                                <td class="p-1.5">Timin (T)</td>
+                                <td class="p-1.5">Urasil (U)</td>
+                            </tr>
+                            <tr>
+                                <td class="p-1.5 font-medium">Fungsi</td>
+                                <td class="p-1.5">Penyimpan Genetik</td>
+                                <td class="p-1.5">Sintesis Protein</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Tab 3: Interactive Quiz -->
+            <div id="tab-content-quiz" class="p-5 flex-1 overflow-y-auto custom-scrollbar hidden flex flex-col gap-4">
+                <div class="p-3 rounded-xl bg-indigo-950/40 border border-indigo-500/20 flex justify-between items-center">
+                    <div>
+                        <h2 class="text-base font-bold text-indigo-300">Kuis Evaluasi</h2>
+                        <p class="text-xs text-slate-400">Uji pemahaman materi genetik</p>
+                    </div>
+                    <span id="quiz-score" class="px-3 py-1 rounded-full bg-indigo-600 font-extrabold text-white text-xs">Skor: 0</span>
+                </div>
+
+                <!-- Quiz Questions List -->
+                <div id="quiz-container" class="flex flex-col gap-4 text-xs">
+                    <!-- Questions generated via JavaScript -->
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Footer Banner -->
+    <footer class="relative z-10 w-full px-6 py-2 glass-panel border-t border-slate-800 flex justify-between items-center text-[11px] text-slate-400">
+        <div><i class="fa-solid fa-graduation-cap text-indigo-400"></i> Media Pembelajaran Biologi 3D Interaktif</div>
+        <div>Dari gen, lahir protein, dari protein, lahir kehidupan.</div>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Data Models Info
+        const infoData = {
+            kromosom: {
+                title: "Kromosom",
+                tag: "Struktur Pembawa Gen",
+                icon: "fa-chromosome",
+                color: "purple",
+                html: `
+                    <p class="font-medium text-purple-300">Kromosom adalah struktur padat penyimpan materi genetik utama di dalam inti sel.</p>
+                    <ul class="list-disc list-inside space-y-1.5 mt-2 text-slate-300">
+                        <li><b>Kromatid:</b> Salah satu dari dua lengan identik hasil duplikasi kromosom.</li>
+                        <li><b>Sentromer:</b> Wilayah tengah yang mengikat dan menyatukan dua kromatid bersaudara.</li>
+                        <li><b>Nukleosom:</b> Unit dasar di mana rantai DNA melilit protein histon agar muat di dalam nukleus sel.</li>
+                    </ul>
+                `
+            },
+            dna: {
+                title: "DNA (Asam Deoksiribonukleat)",
+                tag: "Rantai Ganda Berpilin (Double Helix)",
+                icon: "fa-dna",
+                color: "blue",
+                html: `
+                    <p class="font-medium text-blue-300">DNA adalah molekul utama pembawa blueprint instruksi genetik makhluk hidup.</p>
+                    <ul class="list-disc list-inside space-y-1.5 mt-2 text-slate-300">
+                        <li><b>Kerangka Utama:</b> Terdiri dari pasangan gula deoksiribosa dan gugus fosfat.</li>
+                        <li><b>Pasangan Basa Nitrogen:</b>
+                            <div class="mt-1 pl-4 space-y-1">
+                                <p>• <b>Adenin (A)</b> berpasangan dengan <b>Timin (T)</b></p>
+                                <p>• <b>Guanin (G)</b> berpasangan dengan <b>Sitosin (C)</b></p>
+                            </div>
+                        </li>
+                    </ul>
+                `
+            },
+            rna: {
+                title: "RNA (Asam Ribonukleat)",
+                tag: "Untai Tunggal (Single Strand)",
+                icon: "fa-share-nodes",
+                color: "emerald",
+                html: `
+                    <p class="font-medium text-emerald-300">RNA berfungsi menyalin instruksi genetik DNA untuk dikirim ke ribosom.</p>
+                    <ul class="list-disc list-inside space-y-1.5 mt-2 text-slate-300">
+                        <li><b>Nukleotida RNA:</b> Tersusun dari gula ribosa, gugus fosfat, dan basa nitrogen.</li>
+                        <li><b>Perbedaan Basa:</b> Menggunakan <b>Urasil (U)</b> sebagai pengganti Timin (T) untuk berpasangan dengan Adenin (A).</li>
+                        <li><b>Rantai Tunggal:</b> Fleksibel bergerak keluar dari inti sel menuju sitoplasma.</li>
+                    </ul>
+                `
+            },
+            gen: {
+                title: "Gen",
+                tag: "Unit Pewarisan Sifat",
+                icon: "fa-code-commit",
+                color: "amber",
+                html: `
+                    <p class="font-medium text-amber-300">Gen adalah segmen atau urutan basa tertentu pada rantai DNA.</p>
+                    <ul class="list-disc list-inside space-y-1.5 mt-2 text-slate-300">
+                        <li><b>Fungsi Utama:</b> Mengandungi instruksi spesifik untuk memproduksi rantai asam amino (protein).</li>
+                        <li><b>Penentu Karakter:</b> Menentukan sifat fisik, fisiologis, dan fenotipe spesifik makhluk hidup.</li>
+                    </ul>
+                `
+            }
+        };
+
+        // Quiz Question Dataset
+        const quizQuestions = [
+            {
+                q: "Basa nitrogen manakah yang hanya ditemukan pada RNA dan tidak ada di DNA?",
+                options: ["Timin (T)", "Urasil (U)", "Adenin (A)", "Guanin (G)"],
+                ans: 1
+            },
+            {
+                q: "Pasangan basa nitrogen yang tepat pada molekul DNA adalah...",
+                options: ["A - U dan G - C", "A - C dan T - G", "A - T dan G - C", "A - G dan T - C"],
+                ans: 2
+            },
+            {
+                q: "Bagian kromosom yang berfungsi mengikat dua kromatid bersaudara disebut...",
+                options: ["Sentromer", "Nukleosom", "Histon", "Kloroplas"],
+                ans: 0
+            },
+            {
+                q: "Struktur di mana untai DNA melilit protein histon membentuk unit...",
+                options: ["Kromatin", "Nukleosom", "Genom", "Ribosom"],
+                ans: 1
+            }
+        ];
+
+        let userScore = 0;
+
+        // Three.js Setup Variables
+        let scene, camera, renderer, controls;
+        let models = {};
+        let autoRotate = true;
+
+        function initThree() {
+            const container = document.getElementById('canvas-container');
+            
+            // Scene Setup
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x0f172a, 0.02);
+
+            // Camera Setup
+            camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 1000);
+            camera.position.set(0, 0, 28);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(container.clientWidth, container.clientHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.shadowMap.enabled = true;
+            container.appendChild(renderer.domElement);
+
+            // Orbit Controls
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxDistance = 50;
+            controls.minDistance = 5;
+
+            // Lighting Setup
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+            scene.add(ambientLight);
+
+            const dirLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight1.position.set(10, 20, 15);
+            scene.add(dirLight1);
+
+            const dirLight2 = new THREE.DirectionalLight(0x6366f1, 0.5);
+            dirLight2.position.set(-10, -10, -10);
+            scene.add(dirLight2);
+
+            // Build Procedural 3D Models
+            buildKromosomModel();
+            buildDNAModel();
+            buildRNAModel();
+            buildGenHighlightModel();
+
+            // Event Listeners
+            window.addEventListener('resize', onWindowResize);
+            
+            // Animation Loop
+            animate();
+        }
+
+        // --- 3D Model Procedural Constructors ---
+
+        // Helper Capsule
+        function createCapsule(radius, height, color) {
+            const group = new THREE.Group();
+            const mat = new THREE.MeshStandardMaterial({ color: color, roughness: 0.3, metalness: 0.2 });
+            
+            const cylGeo = new THREE.CylinderGeometry(radius, radius, height, 16);
+            const cyl = new THREE.Mesh(cylGeo, mat);
+            group.add(cyl);
+
+            const sphereGeo = new THREE.SphereGeometry(radius, 16, 16);
+            const sphereTop = new THREE.Mesh(sphereGeo, mat);
+            sphereTop.position.y = height / 2;
+            group.add(sphereTop);
+
+            const sphereBot = new THREE.Mesh(sphereGeo, mat);
+            sphereBot.position.y = -height / 2;
+            group.add(sphereBot);
+
+            return group;
+        }
+
+        // 1. Kromosom Model
+        function buildKromosomModel() {
+            const kromGroup = new THREE.Group();
+            kromGroup.position.set(-11, 0, 0);
+
+            const matKromatid = new THREE.MeshStandardMaterial({ 
+                color: 0x9333ea, 
+                roughness: 0.4, 
+                metalness: 0.1 
+            });
+
+            // Lengan Kromatid X-Shape
+            const armGeo = new THREE.CylinderGeometry(0.7, 0.9, 8, 16);
+            
+            const arm1 = new THREE.Mesh(armGeo, matKromatid);
+            arm1.rotation.z = Math.PI / 6;
+            arm1.position.set(-1.5, 2, 0);
+            kromGroup.add(arm1);
+
+            const arm2 = new THREE.Mesh(armGeo, matKromatid);
+            arm2.rotation.z = -Math.PI / 6;
+            arm2.position.set(1.5, 2, 0);
+            kromGroup.add(arm2);
+
+            const arm3 = new THREE.Mesh(armGeo, matKromatid);
+            arm3.rotation.z = -Math.PI / 6;
+            arm3.position.set(-1.5, -2, 0);
+            kromGroup.add(arm3);
+
+            const arm4 = new THREE.Mesh(armGeo, matKromatid);
+            arm4.rotation.z = Math.PI / 6;
+            arm4.position.set(1.5, -2, 0);
+            kromGroup.add(arm4);
+
+            // Sentromer (Pusat)
+            const sentromerGeo = new THREE.SphereGeometry(1.2, 32, 32);
+            const sentromerMat = new THREE.MeshStandardMaterial({ 
+                color: 0xf59e0b, 
+                roughness: 0.2, 
+                emissive: 0xd97706,
+                emissiveIntensity: 0.4
+            });
+            const sentromer = new THREE.Mesh(sentromerGeo, sentromerMat);
+            kromGroup.add(sentromer);
+
+            // Nukleosom Ring / Mini Histon Details
+            for(let i=0; i<12; i++) {
+                const angle = (i / 12) * Math.PI * 2;
+                const histon = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.3, 16, 16),
+                    new THREE.MeshStandardMaterial({ color: 0xec4899 })
+                );
+                histon.position.set(Math.cos(angle)*2.2, Math.sin(angle)*2.2, 0);
+                kromGroup.add(histon);
+            }
+
+            models.kromosom = kromGroup;
+            scene.add(kromGroup);
+        }
+
+        // 2. DNA Double Helix Model
+        function buildDNAModel() {
+            const dnaGroup = new THREE.Group();
+            dnaGroup.position.set(-3.5, 0, 0);
+
+            const numPairs = 18;
+            const radius = 2.2;
+            const heightStep = 0.6;
+
+            const baseColors = {
+                A: 0xef4444, // Merah
+                T: 0xeab308, // Kuning
+                G: 0x22c55e, // Hijau
+                C: 0x3b82f6  // Biru
+            };
+
+            const pairTypes = [
+                ['A', 'T'], ['G', 'C'], ['T', 'A'], ['C', 'G']
+            ];
+
+            for (let i = 0; i < numPairs; i++) {
+                const y = (i - numPairs / 2) * heightStep;
+                const angle = i * 0.45;
+
+                const x1 = Math.cos(angle) * radius;
+                const z1 = Math.sin(angle) * radius;
+                const x2 = Math.cos(angle + Math.PI) * radius;
+                const z2 = Math.sin(angle + Math.PI) * radius;
+
+                // Backbone Spheres
+                const backboneGeo = new THREE.SphereGeometry(0.35, 16, 16);
+                const bbMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, roughness: 0.3 });
+                
+                const bb1 = new THREE.Mesh(backboneGeo, bbMat);
+                bb1.position.set(x1, y, z1);
+                dnaGroup.add(bb1);
+
+                const bb2 = new THREE.Mesh(backboneGeo, bbMat);
+                bb2.position.set(x2, y, z2);
+                dnaGroup.add(bb2);
+
+                // Base Rungs (Cylinders)
+                const pair = pairTypes[i % pairTypes.length];
+                
+                // Base 1
+                const base1Mat = new THREE.MeshStandardMaterial({ color: baseColors[pair[0]] });
+                const base1Geo = new THREE.CylinderGeometry(0.12, 0.12, radius, 12);
+                const base1 = new THREE.Mesh(base1Geo, base1Mat);
+                base1.position.set(x1/2, y, z1/2);
+                base1.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(x1, 0, z1).normalize());
+                dnaGroup.add(base1);
+
+                // Base 2
+                const base2Mat = new THREE.MeshStandardMaterial({ color: baseColors[pair[1]] });
+                const base2Geo = new THREE.CylinderGeometry(0.12, 0.12, radius, 12);
+                const base2 = new THREE.Mesh(base2Geo, base2Mat);
+                base2.position.set(x2/2, y, z2/2);
+                base2.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(x2, 0, z2).normalize());
+                dnaGroup.add(base2);
+            }
+
+            models.dna = dnaGroup;
+            scene.add(dnaGroup);
+        }
+
+        // 3. RNA Single Helix Model
+        function buildRNAModel() {
+            const rnaGroup = new THREE.Group();
+            rnaGroup.position.set(3.5, 0, 0);
+
+            const numBases = 16;
+            const radius = 2.0;
+            const heightStep = 0.65;
+
+            const rnaColors = [0xef4444, 0x84cc16, 0x22c55e, 0x3b82f6]; // A, U, G, C
+
+            for (let i = 0; i < numBases; i++) {
+                const y = (i - numBases / 2) * heightStep;
+                const angle = i * 0.45;
+
+                const x = Math.cos(angle) * radius;
+                const z = Math.sin(angle) * radius;
+
+                // Single Backbone
+                const bb = new THREE.Mesh(
+                    new THREE.SphereGeometry(0.35, 16, 16),
+                    new THREE.MeshStandardMaterial({ color: 0x10b981, roughness: 0.3 })
+                );
+                bb.position.set(x, y, z);
+                rnaGroup.add(bb);
+
+                // Single Base Branch
+                const baseMat = new THREE.MeshStandardMaterial({ color: rnaColors[i % 4] });
+                const baseGeo = new THREE.CylinderGeometry(0.12, 0.12, radius, 12);
+                const base = new THREE.Mesh(baseGeo, baseMat);
+                base.position.set(x/2, y, z/2);
+                base.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(-x, 0, -z).normalize());
+                rnaGroup.add(base);
+            }
+
+            models.rna = rnaGroup;
+            scene.add(rnaGroup);
+        }
+
+        // 4. Gen Highlight DNA Segment
+        function buildGenHighlightModel() {
+            const genGroup = new THREE.Group();
+            genGroup.position.set(10.5, 0, 0);
+
+            const numPairs = 18;
+            const radius = 2.0;
+            const heightStep = 0.6;
+
+            for (let i = 0; i < numPairs; i++) {
+                const y = (i - numPairs / 2) * heightStep;
+                const angle = i * 0.45;
+
+                const x1 = Math.cos(angle) * radius;
+                const z1 = Math.sin(angle) * radius;
+                const x2 = Math.cos(angle + Math.PI) * radius;
+                const z2 = Math.sin(angle + Math.PI) * radius;
+
+                // Is Gen Segment (Middle 6 pairs highlighted)
+                const isGen = i >= 6 && i <= 12;
+                const colorBB = isGen ? 0xf59e0b : 0x475569;
+                const baseColor = isGen ? 0xfbbf24 : 0x64748b;
+
+                // Backbone
+                const bbMat = new THREE.MeshStandardMaterial({ 
+                    color: colorBB, 
+                    emissive: isGen ? 0xd97706 : 0x000000,
+                    emissiveIntensity: isGen ? 0.5 : 0
+                });
+
+                const bb1 = new THREE.Mesh(new THREE.SphereGeometry(0.32, 16, 16), bbMat);
+                bb1.position.set(x1, y, z1);
+                genGroup.add(bb1);
+
+                const bb2 = new THREE.Mesh(new THREE.SphereGeometry(0.32, 16, 16), bbMat);
+                bb2.position.set(x2, y, z2);
+                genGroup.add(bb2);
+
+                // Rung
+                const rungMat = new THREE.MeshStandardMaterial({ color: baseColor });
+                const rungGeo = new THREE.CylinderGeometry(0.12, 0.12, radius * 2, 12);
+                const rung = new THREE.Mesh(rungGeo, rungMat);
+                rung.position.set(0, y, 0);
+                rung.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), new THREE.Vector3(x1, 0, z1).normalize());
+                genGroup.add(rung);
+            }
+
+            models.gen = genGroup;
+            scene.add(genGroup);
+        }
+
+        // Animation Loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            if (autoRotate) {
+                if (models.kromosom) models.kromosom.rotation.y += 0.008;
+                if (models.dna) models.dna.rotation.y += 0.012;
+                if (models.rna) models.rna.rotation.y += 0.012;
+                if (models.gen) models.gen.rotation.y += 0.012;
+            }
+
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Window Resize Handler
+        function onWindowResize() {
+            const container = document.getElementById('canvas-container');
+            camera.aspect = container.clientWidth / container.clientHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(container.clientWidth, container.clientHeight);
+        }
+
+        // Focus Camera Control Function
+        function focusModel(type) {
+            autoRotate = false;
+            
+            const targetPositions = {
+                all: { x: 0, y: 0, z: 28, lookX: 0 },
+                kromosom: { x: -11, y: 0, z: 12, lookX: -11 },
+                dna: { x: -3.5, y: 0, z: 10, lookX: -3.5 },
+                rna: { x: 3.5, y: 0, z: 10, lookX: 3.5 },
+                gen: { x: 10.5, y: 0, z: 10, lookX: 10.5 }
+            };
+
+            const target = targetPositions[type];
+
+            // Smooth camera transition
+            const startPos = { x: camera.position.x, y: camera.position.y, z: camera.position.z };
+            const startLook = { x: controls.target.x, y: controls.target.y, z: controls.target.z };
+            
+            let progress = 0;
+            const tween = setInterval(() => {
+                progress += 0.05;
+                camera.position.x = startPos.x + (target.x - startPos.x) * progress;
+                camera.position.y = startPos.y + (target.y - startPos.y) * progress;
+                camera.position.z = startPos.z + (target.z - startPos.z) * progress;
+                
+                controls.target.x = startLook.x + (target.lookX - startLook.x) * progress;
+                controls.target.y = 0;
+                controls.target.z = 0;
+
+                if (progress >= 1) clearInterval(tween);
+            }, 16);
+
+            // Update UI Detail Card if specific item chosen
+            if (type !== 'all' && infoData[type]) {
+                updateDetailCard(type);
+            }
+        }
+
+        function resetCamera() {
+            focusModel('all');
+            autoRotate = true;
+        }
+
+        function toggleRotation() {
+            autoRotate = !autoRotate;
+            document.getElementById('btn-rotate').classList.toggle('text-indigo-400');
+            document.getElementById('btn-rotate').classList.toggle('text-slate-400');
+        }
+
+        // UI Detail Updates
+        function updateDetailCard(type) {
+            const data = infoData[type];
+            document.getElementById('detail-title').innerText = data.title;
+            document.getElementById('detail-tag').innerText = data.tag;
+            document.getElementById('detail-body').innerHTML = data.html;
+            
+            const iconBox = document.getElementById('detail-icon');
+            iconBox.className = `p-3 rounded-lg text-white text-xl bg-${data.color}-600`;
+            iconBox.innerHTML = `<i class="fa-solid ${data.icon}"></i>`;
+        }
+
+        // Tab Navigation Switcher
+        function switchTab(tab) {
+            const tabs = ['detail', 'flow', 'quiz'];
+            tabs.forEach(t => {
+                document.getElementById(`tab-content-${t}`).classList.add('hidden');
+                const btn = document.getElementById(`tab-btn-${t}`);
+                btn.classList.remove('border-indigo-500', 'text-indigo-400');
+                btn.classList.add('border-transparent', 'text-slate-400');
+            });
+
+            document.getElementById(`tab-content-${tab}`).classList.remove('hidden');
+            const activeBtn = document.getElementById(`tab-btn-${tab}`);
+            activeBtn.classList.remove('border-transparent', 'text-slate-400');
+            activeBtn.classList.add('border-indigo-500', 'text-indigo-400');
+        }
+
+        // Quiz Renderer
+        function initQuiz() {
+            const quizBox = document.getElementById('quiz-container');
+            quizBox.innerHTML = '';
+
+            quizQuestions.forEach((q, idx) => {
+                const qEl = document.createElement('div');
+                qEl.className = 'p-3 rounded-xl bg-slate-800/60 border border-slate-700/80 flex flex-col gap-2';
+                
+                let optionsHTML = '';
+                q.options.forEach((opt, optIdx) => {
+                    optionsHTML += `
+                        <button onclick="checkAnswer(${idx}, ${optIdx})" id="q-${idx}-opt-${optIdx}" class="w-full text-left p-2 rounded bg-slate-900/80 hover:bg-indigo-900/40 border border-slate-700/60 transition text-[11px] text-slate-300">
+                            ${String.fromCharCode(65 + optIdx)}. ${opt}
+                        </button>
+                    `;
+                });
+
+                qEl.innerHTML = `
+                    <p class="font-bold text-slate-200">${idx + 1}. ${q.q}</p>
+                    <div class="flex flex-col gap-1.5 mt-1">${optionsHTML}</div>
+                `;
+                quizBox.appendChild(qEl);
+            });
+        }
+
+        function checkAnswer(qIdx, optIdx) {
+            const q = quizQuestions[qIdx];
+            const isCorrect = optIdx === q.ans;
+
+            for (let i = 0; i < q.options.length; i++) {
+                const btn = document.getElementById(`q-${qIdx}-opt-${i}`);
+                btn.disabled = true;
+                if (i === q.ans) {
+                    btn.classList.add('bg-emerald-900/80', 'border-emerald-500', 'text-emerald-200');
+                } else if (i === optIdx && !isCorrect) {
+                    btn.classList.add('bg-rose-900/80', 'border-rose-500', 'text-rose-200');
+                }
+            }
+
+            if (isCorrect) {
+                userScore += 25;
+                document.getElementById('quiz-score').innerText = `Skor: ${userScore}`;
+            }
+        }
+
+        // Initialize Everything on Load
+        window.onload = () => {
+            initThree();
+            initQuiz();
+        };
+    </script>
+</body>
+</html>
