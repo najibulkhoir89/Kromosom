@@ -98,6 +98,9 @@
             <button id="nav-btn-kromosom" onclick="focusModel('kromosom')" class="nav-btn px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold bg-slate-800/80 hover:bg-slate-700 text-purple-300 border border-purple-500/30 transition flex items-center gap-1.5 shrink-0">
                 <i class="fa-solid fa-chromosome"></i> Kromosom
             </button>
+            <button id="nav-btn-transisi" onclick="focusModel('transisi')" class="nav-btn px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold bg-slate-800/80 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 transition flex items-center gap-1.5 shrink-0" title="Zoom In Untaian DNA & Nukleosom">
+                <i class="fa-solid fa-magnifying-glass-plus"></i> Untaian DNA
+            </button>
             <button id="nav-btn-dna" onclick="focusModel('dna')" class="nav-btn px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold bg-slate-800/80 hover:bg-slate-700 text-blue-300 border border-blue-500/30 transition flex items-center gap-1.5 shrink-0">
                 <i class="fa-solid fa-dna"></i> DNA
             </button>
@@ -236,6 +239,13 @@
                                 <div>
                                     <span class="font-bold text-purple-300">Kromosom:</span>
                                     <p class="text-slate-400 text-[11px] mt-0.5">Mengemas dan melindungi rantai DNA panjang di dalam inti sel.</p>
+                                </div>
+                            </div>
+                            <div onclick="focusModel('transisi')" class="p-2.5 rounded-lg bg-slate-800/60 hover:bg-slate-800/90 border border-cyan-500/20 flex items-start gap-2.5 cursor-pointer transition">
+                                <span class="text-cyan-400 font-bold mt-0.5 text-base shrink-0"><i class="fa-solid fa-magnifying-glass-plus"></i></span>
+                                <div>
+                                    <span class="font-bold text-cyan-300">Untaian DNA (Zoom In):</span>
+                                    <p class="text-slate-400 text-[11px] mt-0.5">Melihat de-kondensasi serat kromatin ke nukleosom dan untai ganda berpilin.</p>
                                 </div>
                             </div>
                             <div onclick="focusModel('dna')" class="p-2.5 rounded-lg bg-slate-800/60 hover:bg-slate-800/90 border border-blue-500/20 flex items-start gap-2.5 cursor-pointer transition">
@@ -385,6 +395,26 @@
                     </ul>
                 `
             },
+            transisi: {
+                title: "Pengemasan & Untaian DNA",
+                tag: "Zoom In: Kromatin ke Double Helix",
+                icon: "fa-magnifying-glass-plus",
+                color: "cyan",
+                html: `
+                    <p class="font-medium text-cyan-300">Tampilan jarak dekat memperlihatkan bagaimana serat kromatin padat terurai menjadi untaian ganda DNA berpilin (Double Helix).</p>
+                    <ul class="list-disc list-inside space-y-1.5 mt-2 text-slate-300">
+                        <li><b>Serat Solenoid:</b> Struktur lilitan rapat benang kromatin 30 nm yang keluar dari lengan kromosom.</li>
+                        <li><b>Nukleosom:</b> Rangkaian paket 8 protein histon merah muda yang dililit oleh ~1,65 putaran untai DNA.</li>
+                        <li><b>Pita Ganda (Double Helix):</b> Untai terurai membuka menjadi dua pita antiparalel gula-fosfat lengkap dengan pasangan basa nitrogen.</li>
+                        <li><b>Pasangan Basa Nitrogen:</b>
+                            <div class="mt-1 pl-4 space-y-0.5">
+                                <p>• <b class="text-rose-400">Adenin (A - Merah)</b> berikatan dengan <b class="text-amber-400">Timin (T - Kuning)</b></p>
+                                <p>• <b class="text-emerald-400">Guanin (G - Hijau)</b> berikatan dengan <b class="text-blue-400">Sitosin (C - Biru)</b></p>
+                            </div>
+                        </li>
+                    </ul>
+                `
+            },
             dna: {
                 title: "DNA (Asam Deoksiribonukleat)",
                 tag: "Rantai Ganda Berpilin (Double Helix)",
@@ -437,6 +467,7 @@
             blue: { bg: 'bg-blue-600', text: 'text-blue-300', border: 'border-blue-500/30' },
             emerald: { bg: 'bg-emerald-600', text: 'text-emerald-300', border: 'border-emerald-500/30' },
             amber: { bg: 'bg-amber-600', text: 'text-amber-300', border: 'border-amber-500/30' },
+            cyan: { bg: 'bg-cyan-600', text: 'text-cyan-300', border: 'border-cyan-500/30' },
             indigo: { bg: 'bg-indigo-600', text: 'text-indigo-300', border: 'border-indigo-500/30' }
         };
 
@@ -847,50 +878,205 @@
                 kromGroup.add(telMesh);
             });
 
-            // Unwinding Chromatin & Nucleosome String (Mengurai ke Arah DNA)
-            const unspoolPoints = [
-                new THREE.Vector3(1.2, 4.8, 0.0),
-                new THREE.Vector3(2.2, 4.4, 0.3),
-                new THREE.Vector3(2.8, 3.2, -0.2),
-                new THREE.Vector3(3.6, 2.2, 0.4),
-                new THREE.Vector3(4.3, 1.2, -0.1),
-                new THREE.Vector3(5.2, 0.4, 0.2)
+            // --- Realistic Unspooling Hierarchy: Chromatin -> Nucleosomes -> Full DNA Double Helix ---
+            
+            // Trajectory connecting chromosome p-arm to main DNA model
+            const transitionPoints = [
+                new THREE.Vector3(1.2, 5.0, 0.0),    // Top right chromatid telomere
+                new THREE.Vector3(2.0, 4.6, 0.25),   // Uncoiling chromatin loop
+                new THREE.Vector3(2.7, 3.8, -0.15),  // Nucleosome dense section
+                new THREE.Vector3(3.5, 2.8, 0.2),    // Nucleosome spreading
+                new THREE.Vector3(4.2, 1.8, -0.1),   // Nucleosome loose array
+                new THREE.Vector3(4.8, 1.4, 0.1),    // Nucleosome exit -> DNA expansion
+                new THREE.Vector3(5.5, 1.7, -0.2),   // Unzipping & expanding into double helix
+                new THREE.Vector3(6.2, 2.5, 0.25),   // Lofted DNA double helix
+                new THREE.Vector3(6.9, 3.6, -0.1),   // Twisting double helix
+                new THREE.Vector3(7.5, 4.8, 0.0)     // Seamlessly merges with main DNA model at x = -3.5
             ];
-            const unspoolCurve = new THREE.CatmullRomCurve3(unspoolPoints);
-            const unspoolGeo = new THREE.TubeGeometry(unspoolCurve, 50, 0.06, 8, false);
+
+            const mainTransitionCurve = new THREE.CatmullRomCurve3(transitionPoints);
+
             const unspoolMat = new THREE.MeshStandardMaterial({ 
                 color: 0x0284c7, 
                 roughness: 0.3,
                 emissive: 0x0369a1,
-                emissiveIntensity: 0.3
+                emissiveIntensity: 0.25
             });
-            const unspoolMesh = new THREE.Mesh(unspoolGeo, unspoolMat);
-            kromGroup.add(unspoolMesh);
 
-            // Nucleosomes (Histone Core Octamers) along the unwinding string
+            // 1. Chromatin & Nucleosome Section (t = 0.0 to 0.48)
+            const chromatinSubCurve = new THREE.CatmullRomCurve3(transitionPoints.slice(0, 6));
+            const chromatinTube = new THREE.Mesh(
+                new THREE.TubeGeometry(chromatinSubCurve, 40, 0.07, 8, false),
+                unspoolMat
+            );
+            chromatinTube.userData = { isTransition: true };
+            kromGroup.add(chromatinTube);
+
+            // Nucleosomes (Histone Core Octamers)
             const histonMat = new THREE.MeshStandardMaterial({ 
                 color: 0xec4899, 
                 roughness: 0.3,
+                metalness: 0.1,
                 emissive: 0xbe185d,
                 emissiveIntensity: 0.4
             });
-            const numNucleosomes = 7;
+
+            const numNucleosomes = 6;
             for (let i = 1; i <= numNucleosomes; i++) {
-                const t = i / (numNucleosomes + 1);
-                const pt = unspoolCurve.getPoint(t);
+                const t = 0.10 + (i / 7) * 0.38;
+                const pt = mainTransitionCurve.getPoint(t);
+                const tan = mainTransitionCurve.getTangent(t).normalize();
                 
                 // Histone octamer drum
-                const histon = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.25, 12), histonMat);
-                histon.position.set(pt.x, pt.y, pt.z);
-                histon.rotation.x = Math.PI / 4 + i * 0.3;
-                histon.rotation.y = i * 0.5;
+                const histon = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.25, 14), histonMat);
+                histon.position.copy(pt);
+                histon.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), tan);
+                histon.userData = { isTransition: true };
                 kromGroup.add(histon);
 
-                // Small DNA wrap around histone
-                const wrapRing = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.04, 8, 16), unspoolMat);
-                wrapRing.position.set(pt.x, pt.y, pt.z);
-                wrapRing.rotation.copy(histon.rotation);
+                // DNA wrap around histone core (1.65 turns)
+                const wrapRing = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.045, 8, 16), unspoolMat);
+                wrapRing.position.copy(pt);
+                wrapRing.quaternion.copy(histon.quaternion);
+                wrapRing.userData = { isTransition: true };
                 kromGroup.add(wrapRing);
+            }
+
+            // 2. Full Microscopic DNA Double Helix Section (Visible when zoomed in!)
+            const dnaBaseColors = {
+                A: 0xef4444, // Merah
+                T: 0xeab308, // Kuning
+                G: 0x22c55e, // Hijau
+                C: 0x3b82f6  // Biru
+            };
+
+            const dnaPairPatterns = [
+                ['A', 'T'], ['G', 'C'], ['T', 'A'], ['C', 'G'],
+                ['A', 'T'], ['C', 'G'], ['G', 'C'], ['T', 'A'],
+                ['A', 'T'], ['G', 'C'], ['C', 'G'], ['T', 'A'],
+                ['G', 'C'], ['A', 'T'], ['C', 'G'], ['A', 'T'],
+                ['T', 'A'], ['G', 'C']
+            ];
+
+            const dnaStartT = 0.50;
+            const dnaEndT = 1.0;
+            const numDnaSteps = 18;
+            const helixTurns = 2.8;
+            const maxRadius = 0.72;
+            const upVec = new THREE.Vector3(0, 0, 1);
+
+            const strand1Points = [];
+            const strand2Points = [];
+
+            const bbBeadMat = new THREE.MeshStandardMaterial({ 
+                color: 0x0284c7, 
+                roughness: 0.3, 
+                metalness: 0.2 
+            });
+            const hBondMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+
+            for (let i = 0; i <= numDnaSteps; i++) {
+                const subT = i / numDnaSteps;
+                const t = dnaStartT + subT * (dnaEndT - dnaStartT);
+
+                const P = mainTransitionCurve.getPoint(t);
+                const T = mainTransitionCurve.getTangent(t).normalize();
+
+                const N = new THREE.Vector3().crossVectors(T, upVec).normalize();
+                const B = new THREE.Vector3().crossVectors(T, N).normalize();
+
+                // Smooth expansion from single strand (0.12) to full double helix (0.72)
+                const currentRadius = 0.12 + (maxRadius - 0.12) * Math.min(1, subT * 1.8);
+                const angle = subT * helixTurns * Math.PI * 2;
+
+                const cosA = Math.cos(angle);
+                const sinA = Math.sin(angle);
+
+                // Strand 1 position
+                const p1 = new THREE.Vector3(
+                    P.x + (cosA * N.x + sinA * B.x) * currentRadius,
+                    P.y + (cosA * N.y + sinA * B.y) * currentRadius,
+                    P.z + (cosA * N.z + sinA * B.z) * currentRadius
+                );
+
+                // Strand 2 position (complementary opposite)
+                const p2 = new THREE.Vector3(
+                    P.x - (cosA * N.x + sinA * B.x) * currentRadius,
+                    P.y - (cosA * N.y + sinA * B.y) * currentRadius,
+                    P.z - (cosA * N.z + sinA * B.z) * currentRadius
+                );
+
+                strand1Points.push(p1);
+                strand2Points.push(p2);
+
+                // Build Nitrogen Base Pair Rung
+                if (i >= 2) {
+                    const pair = dnaPairPatterns[(i - 2) % dnaPairPatterns.length];
+
+                    // Base 1 (p1 to center)
+                    const dist1 = p1.distanceTo(P);
+                    const dir1 = new THREE.Vector3().subVectors(P, p1).normalize();
+                    const mid1 = new THREE.Vector3().addVectors(p1, P).multiplyScalar(0.5);
+
+                    const b1Geo = new THREE.CylinderGeometry(0.065, 0.065, dist1, 10);
+                    const b1Mat = new THREE.MeshStandardMaterial({ 
+                        color: dnaBaseColors[pair[0]], 
+                        roughness: 0.3,
+                        metalness: 0.1
+                    });
+                    const b1Mesh = new THREE.Mesh(b1Geo, b1Mat);
+                    b1Mesh.position.copy(mid1);
+                    b1Mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir1);
+                    b1Mesh.userData = { isTransition: true };
+                    kromGroup.add(b1Mesh);
+
+                    // Base 2 (center to p2)
+                    const dist2 = p2.distanceTo(P);
+                    const dir2 = new THREE.Vector3().subVectors(p2, P).normalize();
+                    const mid2 = new THREE.Vector3().addVectors(P, p2).multiplyScalar(0.5);
+
+                    const b2Geo = new THREE.CylinderGeometry(0.065, 0.065, dist2, 10);
+                    const b2Mat = new THREE.MeshStandardMaterial({ 
+                        color: dnaBaseColors[pair[1]], 
+                        roughness: 0.3,
+                        metalness: 0.1
+                    });
+                    const b2Mesh = new THREE.Mesh(b2Geo, b2Mat);
+                    b2Mesh.position.copy(mid2);
+                    b2Mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir2);
+                    b2Mesh.userData = { isTransition: true };
+                    kromGroup.add(b2Mesh);
+
+                    // Hydrogen bond central junction
+                    const hBond = new THREE.Mesh(new THREE.SphereGeometry(0.04, 8, 8), hBondMat);
+                    hBond.position.copy(P);
+                    hBond.userData = { isTransition: true };
+                    kromGroup.add(hBond);
+
+                    // Sugar-Phosphate backbone spheres at p1 & p2
+                    const bead1 = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 10), bbBeadMat);
+                    bead1.position.copy(p1);
+                    bead1.userData = { isTransition: true };
+                    kromGroup.add(bead1);
+
+                    const bead2 = new THREE.Mesh(new THREE.SphereGeometry(0.12, 10, 10), bbBeadMat);
+                    bead2.position.copy(p2);
+                    bead2.userData = { isTransition: true };
+                    kromGroup.add(bead2);
+                }
+            }
+
+            // Continuous Helical Backbones
+            if (strand1Points.length > 2) {
+                const s1Curve = new THREE.CatmullRomCurve3(strand1Points);
+                const s1Tube = new THREE.Mesh(new THREE.TubeGeometry(s1Curve, 64, 0.08, 8, false), unspoolMat);
+                s1Tube.userData = { isTransition: true };
+                kromGroup.add(s1Tube);
+
+                const s2Curve = new THREE.CatmullRomCurve3(strand2Points);
+                const s2Tube = new THREE.Mesh(new THREE.TubeGeometry(s2Curve, 64, 0.08, 8, false), unspoolMat);
+                s2Tube.userData = { isTransition: true };
+                kromGroup.add(s2Tube);
             }
 
             // Chromosome Soft Biological Accent Light
@@ -1089,7 +1275,11 @@
                     for (const [key, group] of Object.entries(models)) {
                         const intersects = raycaster.intersectObjects(group.children, true);
                         if (intersects.length > 0) {
-                            focusModel(key);
+                            if (intersects[0].object.userData && intersects[0].object.userData.isTransition) {
+                                focusModel('transisi');
+                            } else {
+                                focusModel(key);
+                            }
                             hitFound = true;
                             break;
                         }
@@ -1104,7 +1294,7 @@
 
             if (autoRotate) {
                 if (models.kromosom) models.kromosom.rotation.y += 0.008;
-                if (models.dna) models.dna.rotation.y += 0.012;
+                if (models.dna) models.dna.rotation.y += 0.008;
                 if (models.rna) models.rna.rotation.y += 0.012;
                 if (models.gen) models.gen.rotation.y += 0.012;
             }
@@ -1143,6 +1333,7 @@
             const basePositions = {
                 all: { x: 0, y: 0, z: 28, lookX: 0, lookY: 0 },
                 kromosom: { x: -11, y: 0, z: 12, lookX: -11, lookY: 0 },
+                transisi: { x: -6.8, y: 2.8, z: 6.8, lookX: -6.8, lookY: 2.8 },
                 dna: { x: -3.5, y: 0, z: 10, lookX: -3.5, lookY: 0 },
                 rna: { x: 3.5, y: 0, z: 10, lookX: 3.5, lookY: 0 },
                 gen: { x: 10.5, y: 0, z: 10, lookX: 10.5, lookY: 0 }
@@ -1157,6 +1348,10 @@
                     target.z = Math.min(68, Math.max(28, 30 / (0.828 * Math.max(aspect, 0.45))));
                     target.y = 1.0;
                     target.lookY = 0.5;
+                } else if (type === 'transisi') {
+                    target.z = Math.min(15, Math.max(6.8, (6.8 * 0.85) / Math.max(aspect, 0.45)));
+                    target.y = 2.8;
+                    target.lookY = 2.8;
                 } else {
                     target.z = Math.min(24, Math.max(target.z, (target.z * 0.85) / Math.max(aspect, 0.45)));
                     target.y = 0.5;
@@ -1210,7 +1405,7 @@
 
         // Update active navigation button styling
         function updateNavButtons(activeType) {
-            const types = ['all', 'kromosom', 'dna', 'rna', 'gen'];
+            const types = ['all', 'kromosom', 'transisi', 'dna', 'rna', 'gen'];
             types.forEach(t => {
                 const btn = document.getElementById(`nav-btn-${t}`);
                 if (!btn) return;
@@ -1221,6 +1416,7 @@
                     const borderColors = {
                         all: 'border-slate-700 text-slate-300',
                         kromosom: 'border-purple-500/30 text-purple-300',
+                        transisi: 'border-cyan-500/30 text-cyan-300',
                         dna: 'border-blue-500/30 text-blue-300',
                         rna: 'border-emerald-500/30 text-emerald-300',
                         gen: 'border-amber-500/30 text-amber-300'
